@@ -1,0 +1,6 @@
+@Rediscuss.IdentityService_HostAddress = http://localhost:5213
+
+GET {{Rediscuss.IdentityService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
