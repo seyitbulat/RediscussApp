@@ -1,0 +1,6 @@
+@Rediscuss.ForumService_HostAddress = http://localhost:5012
+
+GET {{Rediscuss.ForumService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
