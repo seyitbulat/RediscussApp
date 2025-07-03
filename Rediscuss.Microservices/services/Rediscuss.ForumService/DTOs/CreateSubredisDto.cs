@@ -9,7 +9,5 @@ namespace Rediscuss.ForumService.DTOs
 
         public string Description { get; set; }
 
-        [Required]
-        public int CreatedBy { get; set; }
     }
 }
