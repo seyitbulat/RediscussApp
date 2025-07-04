@@ -1,0 +1,49 @@
+{
+    "ReverseProxy": {
+        "Routes": {
+            "identity-routes": {
+                "ClusterId": "identity-cluster",
+                "Match": {
+                    "Path": "/gateway/auth/{**catch-all}"
+                },
+                "Transforms": [
+                    { "PathPattern": "/api/auth/{**catch-all}" }
+                ]
+            },
+            "users-routes": {
+                "ClusterId": "identity-cluster",
+                "Match": {
+                    "Path": "/gateway/users/{**catch-all}"
+                },
+                "Transforms": [
+                    { "PathPattern": "/api/users/{**catch-all}" }
+                ]
+            },
+            "forum-routes": {
+                "ClusterId": "forum-cluster",
+                "Match": {
+                    "Path": "/gateway/{**catch-all}"
+                },
+                "Transforms": [
+                    { "PathPattern": "/api/{**catch-all}" }
+                ]
+            }
+        },
+        "Clusters": {
+            "identity-cluster": {
+                "Destinations": {
+                    "destination1": {
+                        "Address": "http://localhost:5213"
+                    }
+                }
+            },
+            "forum-cluster": {
+                "Destinations": {
+                    "destination1": {
+                        "Address": "http://localhost:5012"
+                    }
+                }
+            }
+        }
+    }
+}
