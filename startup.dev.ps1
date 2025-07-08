@@ -4,7 +4,7 @@ $MicroserviceDir = Join-Path -Path $ProjectRoot -ChildPath "Rediscuss.Microservi
 $ServiceDir = Join-Path -Path $MicroserviceDir -ChildPath "services"
 
 
-$ForumServiceDir = Join-Path -Path $ServiceDir -ChildPath "Rediscuss.ForumService"
+$ForumService = Join-Path -Path $ServiceDir -ChildPath "Rediscuss.ForumService"
 $IdentityServiceDir = Join-Path -Path $ServiceDir -ChildPath "Rediscuss.IdentityService"
 $GatewayDir = Join-Path -Path $ServiceDir -ChildPath "Rediscuss.ApiGateway"
 
@@ -33,12 +33,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # IdentityService'i başlat
-Start-Process powershell -ArgumentList "-NoExit -Command `$host.ui.RawUI.WindowTitle = 'IdentityService'; dotnet run --project '$IdentityServiceDir'"
+Start-Job -Name "Rediscuss.IdentityService" -ScriptBlock {dotnet run --project $using:IdentityServiceDir}
+# Start-Process powershell -ArgumentList "-NoExit -Command `$host.ui.RawUI.WindowTitle = 'IdentityService'; dotnet run --project '$IdentityServiceDir'"
 
 # ForumService'i başlat
-Start-Process powershell -ArgumentList "-NoExit -Command `$host.ui.RawUI.WindowTitle = 'ForumService'; dotnet run --project '$ForumServiceDir'"
+Start-Job -Name "Rediscuss.ForumService" -ScriptBlock {dotnet run --project $using:ForumService}
+# Start-Process powershell -ArgumentList "-NoExit -Command `$host.ui.RawUI.WindowTitle = 'ForumService'; dotnet run --project '$ForumServiceDir'"
 
 # ApiGateway'i başlat
-Start-Process powershell -ArgumentList "-NoExit -Command `$host.ui.RawUI.WindowTitle = 'ApiGateway'; dotnet run --project '$GatewayDir'"
+Start-Job -Name "Rediscuss.Gateway" -ScriptBlock {dotnet run --project $using:GatewayDir}
+# Start-Process powershell -ArgumentList "-NoExit -Command `$host.ui.RawUI.WindowTitle = 'ApiGateway'; dotnet run --project '$GatewayDir'"
 
-Write-Host "`nTüm servisler başlatıldı. Açılan pencerelerden logları takip edebilirsiniz.`n" -ForegroundColor Green
+Write-Host "`nTüm servisler başlatıldı.`n" -ForegroundColor Green

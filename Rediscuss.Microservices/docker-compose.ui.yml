@@ -1,0 +1,16 @@
+version : "3.8"
+
+
+services: 
+  rediscuss-ui:
+    container_name: rediscuss-ui-dev
+    build:
+      context: ../rediscuss-ui
+      dockerfile: Dockerfile.dev
+    ports:
+    - 3000:3000
+    volumes:
+    - ../rediscuss-ui:/app
+    - /app/node_modules
+    environment:
+    - WATCHPACK_POLLING=true

@@ -1,16 +1,12 @@
 $ProjectRoot = $PSScriptRoot
 
 $MicroserviceDir = Join-Path -Path $ProjectRoot -ChildPath "Rediscuss.Microservices"
-$ServiceDir = Join-Path -Path $MicroserviceDir -ChildPath "services"
-
-
-$ForumServiceDir = Join-Path -Path $ServiceDir -ChildPath "Rediscuss.ForumService"
-$IdentityServiceDir = Join-Path -Path $ServiceDir -ChildPath "Rediscuss.IdentityService"
-$GatewayDir = Join-Path -Path $ServiceDir -ChildPath "Rediscuss.ApiGateway"
 
 $DockerComposeFile = Join-Path -Path $MicroserviceDir -ChildPath "docker-compose.yml"
-$SolutionFile = Join-Path -Path $MicroserviceDir -ChildPath "Rediscuss.sln"
 
+
+$jobNames = "Rediscuss.IdentityService", "Rediscuss.ForumService", "Rediscuss.ApiGateway"
+$processToStop = Get-Process | Where-Object {($jobNames -contains $_.ProcessName)}
 
 # ===================================================================================
 # SCRIPT'İN ANA BÖLÜMÜ
@@ -18,12 +14,21 @@ $SolutionFile = Join-Path -Path $MicroserviceDir -ChildPath "Rediscuss.sln"
 
 Write-Host "Rediscuss Mikroservis Sistemi kapatılıyor..." -ForegroundColor Yellow
 
-# 1. Adım: Tüm dotnet uygulamalarını durdur
-# 'dotnet' adıyla çalışan tüm süreçleri bulur ve zorla kapatır.
-Write-Host "Tüm dotnet uygulamaları durduruluyor..." -ForegroundColor Cyan
-Get-Process dotnet | Stop-Process -Force -ErrorAction SilentlyContinue
-Write-Host "Dotnet uygulamaları durduruldu." -ForegroundColor Green
+# 1. Adım: Alakalı tüm dotnet uygulamalarını durdur
+if($processToStop){
+    $processToStop | ForEach-Object {
+        $processId = $_.Id
+        try {
+                Stop-Process -Id $processId -Force -ErrorAction Stop
+                Write-Host "- $($_.Name) servisi (PID: $processId) durduruldu." -ForegroundColor Green
+            } catch {
+                Write-Warning "PID: $processId ile $($_.Name) servisi durdurulurken bir hata oluştu: $_"
+            }
+        Write-Host
+    }
+}else{
 
+}
 
 # 2. Adım: Docker Konteynerlerini Durdur
 # 'docker compose down' komutu, 'up' ile oluşturulan konteynerleri durdurur ve network'ü kaldırır.
