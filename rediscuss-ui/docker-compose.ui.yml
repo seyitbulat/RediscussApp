@@ -5,12 +5,13 @@ services:
   rediscuss-ui:
     container_name: rediscuss-ui-dev
     build:
-      context: ../rediscuss-ui
+      context: .
       dockerfile: Dockerfile.dev
     ports:
     - 3000:3000
+    - 9229:9229
     volumes:
-    - ../rediscuss-ui:/app
+    - .:/app
     - /app/node_modules
     environment:
     - WATCHPACK_POLLING=true

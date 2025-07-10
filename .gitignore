@@ -75,3 +75,6 @@ ScaffoldingReadMe.txt
 /Rediscuss.Microservices/.vs/Rediscuss/FileContentIndex
 /Rediscuss.Microservices/.vs/ProjectEvaluation
 /Rediscuss.Microservices/.vs/Rediscuss/v17
+
+
+./rediscuss-ui/node_modules

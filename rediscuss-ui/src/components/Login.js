@@ -9,7 +9,7 @@ const Login = () => {
         e.preventDefault();
 
         const response = await apiClient.post('/auth/login', {username, password});
-        localStorage.setItem('jwt_token', response.token);
+        localStorage.setItem('jwt_token', response.data.token);
 
 
     };

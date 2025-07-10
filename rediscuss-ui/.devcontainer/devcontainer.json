@@ -1,0 +1,11 @@
+{
+	"name": "Existing Docker Compose (Extend)",
+	"dockerComposeFile": [
+		"../docker-compose.ui.yml",
+		"docker-compose.yml"
+	],
+	"service": "rediscuss-ui",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"postCreateCommand": "npm install",
+	"postStartCommand": "npm run start"
+}
