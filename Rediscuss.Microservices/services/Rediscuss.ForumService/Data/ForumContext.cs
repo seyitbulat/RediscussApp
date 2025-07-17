@@ -21,5 +21,8 @@ namespace Rediscuss.ForumService.Data
 
         public IMongoCollection<Subredis> Subredises => _database.GetCollection<Subredis>("Subredises");
         public IMongoCollection<Post> Posts => _database.GetCollection<Post>("Posts");
+
+        public IMongoCollection<Permission> Permissions => _database.GetCollection<Permission>("Permissions");
+        public IMongoCollection<Role> Roles => _database.GetCollection<Role>("Roles");
     }
 }

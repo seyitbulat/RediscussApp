@@ -49,7 +49,7 @@ namespace Rediscuss.ForumService.Controllers
         [HttpGet("GetPostsForSubredis")]
         public async Task<IActionResult> GetPostsForSubredis(string subredisId)
         {
-            var posts = await _context.Posts.Find(p => p.SubredisId == subredisId).ToListAsync();
+            var posts = await _context.Posts.Find(p => p.SubredisId == subredisId && p.IsDeleted == false).ToListAsync();
             var postDtos = posts.Select(async p =>
             {
                 var voteKey = $"post:votes:{p.Id}";

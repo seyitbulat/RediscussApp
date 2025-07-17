@@ -2,7 +2,7 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { Roboto } from 'next/font/google'
 import { ThemeProvider } from "@mui/material";
 import theme from '../theme'
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ReactQueryProvider from "@/providers/ReactQueryProvider";
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -11,7 +11,6 @@ const roboto = Roboto({
   variable: '--font-roboto',
 });
 
-const queryClient  = new QueryClient();
 
 export default function RootLayout({
   children,
@@ -21,13 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={roboto.variable}>
       <body>
-        <QueryClientProvider client={queryClient}>
+        <ReactQueryProvider>
           <AppRouterCacheProvider>
             <ThemeProvider theme={theme}>
               {children}
             </ThemeProvider>
           </AppRouterCacheProvider>
-        </QueryClientProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );

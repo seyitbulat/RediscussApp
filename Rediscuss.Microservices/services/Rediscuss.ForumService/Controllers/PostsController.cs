@@ -41,12 +41,48 @@ namespace Rediscuss.ForumService.Controllers
                 Title = createDto.Title,
                 Content = createDto.Content,
                 SubredisId = createDto.SubredisId,
-                CreatedBy = userId
+                CreatedBy = userId,
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
             };
 
             await _context.Posts.InsertOneAsync(post);
 
             return Ok(post); 
+        }
+
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> DeletePost(DeletePostDto deleteDto)
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if(!int.TryParse(userIdString, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var postExists = _context.Posts.Find(p => p.Id == deleteDto.PostId).Any();
+
+            if (!postExists)
+            {
+                return BadRequest("Geçersiz Post ID.");
+            }
+
+            var update = Builders<Post>.Update
+                .Set(p => p.IsDeleted, true)
+                .Set(p => p.DeletedBy, userId)
+                .Set(p => p.DeletedAt, DateTime.UtcNow);
+
+            var result = await _context.Posts.UpdateOneAsync(p => p.Id == deleteDto.PostId, update);
+
+            if (result.ModifiedCount == 0)
+            {
+                return StatusCode(500, "Silme işlemi başarısız.");
+            }
+
+            return Ok("Post başarıyla silindi (soft delete).");
         }
     }
 }

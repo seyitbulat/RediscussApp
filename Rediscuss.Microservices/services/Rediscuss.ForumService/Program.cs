@@ -69,7 +69,17 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     var connectionString = builder.Configuration["RedisConnectionString"];
     return ConnectionMultiplexer.Connect(connectionString);
 });
+
+
 var app = builder.Build();
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbService = app.Services.GetRequiredService<ForumContext>();
+    var seeder = new Seeder(dbService);
+    await seeder.DbInitialize();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

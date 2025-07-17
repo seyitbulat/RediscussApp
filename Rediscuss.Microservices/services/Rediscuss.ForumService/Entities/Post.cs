@@ -10,11 +10,20 @@ namespace Rediscuss.ForumService.Entities
         public string Title { get; set; }
         public string Content { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public DateTime DeletedAt { get; set; }
+
+        public bool IsDeleted { get; set; }
 
 
         //Iliskiler
         [BsonRepresentation(BsonType.ObjectId)]
         public string SubredisId { get; set; }
+
+
+
         public int CreatedBy { get; set; }
+        public int UpdatedBy { get; set; }
+        public int DeletedBy { get; set; }
     }
 }
