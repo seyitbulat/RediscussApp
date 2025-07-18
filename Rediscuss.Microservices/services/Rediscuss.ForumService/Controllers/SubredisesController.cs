@@ -44,5 +44,24 @@ namespace Rediscuss.ForumService.Controllers
 
             return CreatedAtAction(nameof(CreateSubredis), new { id = subredis.Id }, subredis);
         }
+
+
+        [HttpPost("{subredisId}/follow")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> FollowSubredis(string subredisId)
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if(!int.TryParse(userIdString, out int userId)) { return Unauthorized(); }
+
+            var subredis = _context.Subredises.Find(s => s.Id == subredisId  && s.IsDeleted == false);
+
+            if(subredis == null) { return BadRequest("Bu subredis bulunamadı"); }
+
+
+            var existingSubscription = _context.Subscriptions.Find(s => s.SubredisId == subredisId && s.UserId == userId && s.IsDeleted == false).FirstOrDefault();
+
+            if(existingSubscription != null) { return BadRequest("Bu subredis zaten takip ediliyor"); }
+        }
     }
 }
