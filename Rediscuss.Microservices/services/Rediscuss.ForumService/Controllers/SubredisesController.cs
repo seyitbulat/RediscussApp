@@ -44,34 +44,5 @@ namespace Rediscuss.ForumService.Controllers
 
             return CreatedAtAction(nameof(CreateSubredis), new { id = subredis.Id }, subredis);
         }
-
-
-        [HttpGet("GetPostsForSubredis")]
-        public async Task<IActionResult> GetPostsForSubredis(string subredisId)
-        {
-            var posts = await _context.Posts.Find(p => p.SubredisId == subredisId && p.IsDeleted == false).ToListAsync();
-            var postDtos = posts.Select(async p =>
-            {
-                var voteKey = $"post:votes:{p.Id}";
-                var upvotes = (int) await _redisDb.HashGetAsync(voteKey, "upvotes");
-                var downvotes = (int) await _redisDb.HashGetAsync(voteKey, "downvotes");
-
-                return new PostDto
-                {
-                    Id = p.Id,
-                    Content = p.Content,
-                    Title = p.Title,
-                    CreatedAt = p.CreatedAt,
-                    CreatedBy = p.CreatedBy,
-                    SubredisId = p.SubredisId,
-                    UpVotes = upvotes,
-                    DownVotes = downvotes
-                };
-
-            }).ToList();
-
-
-            return Ok(postDtos);
-        }
     }
 }

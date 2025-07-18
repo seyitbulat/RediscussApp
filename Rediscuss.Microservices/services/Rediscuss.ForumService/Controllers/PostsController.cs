@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using Rediscuss.ForumService.Data;
 using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
+using StackExchange.Redis;
 using System.Security.Claims;
 
 namespace Rediscuss.ForumService.Controllers
@@ -14,10 +15,12 @@ namespace Rediscuss.ForumService.Controllers
     public class PostsController : ControllerBase
     {
         private readonly ForumContext _context;
+        private readonly IDatabase _redisDb;
 
-        public PostsController(ForumContext context)
+        public PostsController(ForumContext context, IConnectionMultiplexer redis)
         {
             _context = context;
+            _redisDb = redis.GetDatabase();
         }
 
         [HttpPost]
@@ -52,7 +55,7 @@ namespace Rediscuss.ForumService.Controllers
         }
 
 
-        [HttpPost("DeletePost")]
+        [HttpPost("Delete")]
         [Authorize(Roles = "User")]
         public async Task<IActionResult> DeletePost(DeletePostDto deleteDto)
         {
@@ -83,6 +86,47 @@ namespace Rediscuss.ForumService.Controllers
             }
 
             return Ok("Post başarıyla silindi (soft delete).");
+        }
+
+
+        [HttpGet("GetBySubredis/{subredisId}")]
+        public async Task<IActionResult> GetPostsForSubredis(string subredisId)
+        {
+            var subredisIsExists = await _context.Subredises.Find(s => s.Id == subredisId && s.IsDeleted == false).AnyAsync();
+
+
+            if (!subredisIsExists)
+            {
+                return BadRequest("Subredis bulunamadı");
+            }
+
+
+            var posts = await _context.Posts.Find(p => p.SubredisId == subredisId && p.IsDeleted == false).ToListAsync();
+            var postDtos = posts.Select(async p =>
+            {
+                var voteKey = $"post:votes:{p.Id}";
+
+                var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
+                var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
+
+                return new PostDto
+                {
+                    Id = p.Id,
+                    Content = p.Content,
+                    Title = p.Title,
+                    SubredisId = p.SubredisId,
+                    UpVotes = (int)await upvotesTask,
+                    DownVotes = (int)await downvotesTask,
+                    CreatedAt = p.CreatedAt,
+                    CreatedBy = p.CreatedBy,
+                    UpdatedAt = p.UpdatedAt,
+                    UpdatedBy = p.UpdatedBy
+                };
+
+            }).ToList();
+
+
+            return Ok(postDtos);
         }
     }
 }
