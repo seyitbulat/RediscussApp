@@ -10,91 +10,109 @@ using System.Text;
 
 namespace Rediscuss.IdentityService.Controllers
 {
-	[Route("api/[controller]")]
-	[ApiController]
-	public class AuthController : ControllerBase
-	{
-		private readonly IdentityContext _context;
-		private readonly IConfiguration _configuration;
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AuthController : ControllerBase
+    {
+        private readonly IdentityContext _context;
+        private readonly IConfiguration _configuration;
 
-		public AuthController(IdentityContext context, IConfiguration configuration)
-		{
-			_context = context;
-			_configuration = configuration;
-		}
+        public AuthController(IdentityContext context, IConfiguration configuration)
+        {
+            _context = context;
+            _configuration = configuration;
+        }
 
-		[HttpPost("register")] 
-		public async Task<IActionResult> Register([FromBody] UserRegisterDto registerDto)
-		{
-			var userExists = await _context.Users.AnyAsync(u => u.Username == registerDto.Username || u.Email == registerDto.Email);
-			if (userExists)
-			{
-				return BadRequest("Kullanıcı adı veya e-posta zaten mevcut.");
-			}
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] UserRegisterDto registerDto)
+        {
+            var userExists = await _context.Users.AnyAsync(u => u.Username == registerDto.Username || u.Email == registerDto.Email);
+            if (userExists)
+            {
+                return BadRequest("Kullanıcı adı veya e-posta zaten mevcut.");
+            }
 
-			string passwordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
 
-			var user = new User
-			{
-				Username = registerDto.Username,
-				Email = registerDto.Email,
-				PasswordHash = passwordHash,
-				CreatedAt = DateTime.UtcNow
-			};
+            var user = new User
+            {
+                Username = registerDto.Username,
+                Email = registerDto.Email,
+                PasswordHash = passwordHash,
+                CreatedAt = DateTime.UtcNow
+            };
 
-			await _context.Users.AddAsync(user);
-			await _context.SaveChangesAsync();
+            var role = _context.Roles.FirstOrDefault(r => r.Name == "User");
 
-			return Ok(new { Message = "Kullanıcı başarıyla oluşturuldu." });
-		}
+            user.UserRoles = new List<UserRole>
+                {
+                    new UserRole { RoleId = role.RoleId }
+                };
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
 
-		[HttpPost("login")]
-		public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)
-		{
-			var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginDto.Username);
-			if (user == null)
-			{
-				return Unauthorized("Geçersiz kullanıcı adı veya şifre."); // Güvenlik için hangi bilginin yanlış olduğunu söyleme
-			}
+            return Ok(new { Message = "Kullanıcı başarıyla oluşturuldu." });
+        }
 
-			bool isPasswordValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash);
-			if (!isPasswordValid)
-			{
-				return Unauthorized("Geçersiz kullanıcı adı veya şifre.");
-			}
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)
+        {
+            var user = await _context.Users.Select(x => new User
+            {
+                UserId = x.UserId,
+                Username = x.Username,
+                Email = x.Email,
+                PasswordHash = x.PasswordHash,
+                UserRoles = x.UserRoles.Select(y => new UserRole { Role = new Role { Name = y.Role.Name} }).ToList()
+            }).FirstOrDefaultAsync(u => u.Username == loginDto.Username);
+            if (user == null)
+            {
+                return Unauthorized("Geçersiz kullanıcı adı veya şifre."); // Güvenlik için hangi bilginin yanlış olduğunu söyleme
+            }
 
-			var token = GenerateJwtToken(user);
+            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash);
+            if (!isPasswordValid)
+            {
+                return Unauthorized("Geçersiz kullanıcı adı veya şifre.");
+            }
 
-			return Ok(new { token });
-		}
+            var token = GenerateJwtToken(user);
 
-		private string GenerateJwtToken(User user)
-		{
-			var tokenHandler = new JwtSecurityTokenHandler();
+            return Ok(new { token });
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
 
             var rawKey = Convert.FromBase64String(_configuration["Jwt:Key"]);
             var signingKey = new SymmetricSecurityKey(rawKey);
 
 
-            var claims = new[]
-			{
-				new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()), 
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Name, user.Username),
-				new Claim(JwtRegisteredClaimNames.Email, user.Email),
-				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 
-			var tokenDescriptor = new SecurityTokenDescriptor
-			{
-				Subject = new ClaimsIdentity(claims),
-				Expires = DateTime.UtcNow.AddHours(3), 
-				Issuer = _configuration["Jwt:Issuer"],
-				Audience = _configuration["Jwt:Audience"],
-				SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256Signature)
-			};
+            foreach (var role in user.UserRoles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role.Role.Name));
+            }
 
-			var securityToken = tokenHandler.CreateToken(tokenDescriptor);
-			return tokenHandler.WriteToken(securityToken);
-		}
-	}
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddHours(3),
+                Issuer = _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"],
+                SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(securityToken);
+        }
+    }
 }

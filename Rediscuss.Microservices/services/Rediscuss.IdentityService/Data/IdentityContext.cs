@@ -18,21 +18,26 @@ namespace Rediscuss.IdentityService.Data
         {
 			modelBuilder.Entity<User>(entity =>
 			{
-				entity.HasKey(e => e.UserId);
+				entity.HasKey(e => e.UserId).HasName("UserId");
+
+
 			});
 
 			modelBuilder.Entity<Role>(entity =>
 			{
-				entity.HasKey(e => e.RoleId);
+				entity.HasKey(e => e.RoleId).HasName("RoleId");
+
+
 			});
 
 			modelBuilder.Entity<UserRole>(entity =>
 			{
-				entity.HasKey(e => e.UserId);
-				entity.HasKey(e => e.RoleId);
+				entity.HasKey(e => new {UserId = e.UserId, RoleId = e.RoleId});
 
-				entity.HasOne(e => e.Role);
-				entity.HasOne(e => e.User);
+				entity.HasOne(e => e.Role).WithMany().HasForeignKey(e => e.RoleId).HasPrincipalKey(e => e.RoleId);
+				entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).HasPrincipalKey(e => e.UserId);
+
+				entity.HasOne(e => e.User).WithMany(e => e.UserRoles).HasForeignKey(e => e.UserId);
 			});
 
             base.OnModelCreating(modelBuilder);

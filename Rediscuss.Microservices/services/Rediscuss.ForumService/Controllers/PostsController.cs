@@ -52,7 +52,7 @@ namespace Rediscuss.ForumService.Controllers
         }
 
 
-        [HttpPost]
+        [HttpPost("DeletePost")]
         [Authorize]
         public async Task<IActionResult> DeletePost(DeletePostDto deleteDto)
         {

@@ -5,15 +5,19 @@ namespace Rediscuss.IdentityService.Entities
 {
     public class UserRole
     {
-        [Key]
         public int UserId { get; set; }
         public int RoleId { get; set; }
 
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int? CreatedBy { get; set; }
+
         public bool IsDeleted { get; set; } = false;
+
 
         public User User { get; set; }
         public Role Role { get; set; }
+
+
     }
 }
