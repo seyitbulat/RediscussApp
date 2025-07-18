@@ -21,7 +21,7 @@ namespace Rediscuss.ForumService.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles ="User")]
         public async Task<IActionResult> CreatePost([FromBody] CreatePostDto createDto)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -53,7 +53,7 @@ namespace Rediscuss.ForumService.Controllers
 
 
         [HttpPost("DeletePost")]
-        [Authorize]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> DeletePost(DeletePostDto deleteDto)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

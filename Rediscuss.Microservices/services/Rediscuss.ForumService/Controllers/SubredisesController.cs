@@ -24,7 +24,7 @@ namespace Rediscuss.ForumService.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> CreateSubredis(CreateSubredisDto dto)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

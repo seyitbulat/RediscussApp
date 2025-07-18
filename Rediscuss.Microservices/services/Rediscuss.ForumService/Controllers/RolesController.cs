@@ -21,7 +21,7 @@ namespace Rediscuss.ForumService.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateRole(CreateRoleDto createDto)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
