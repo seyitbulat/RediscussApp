@@ -62,6 +62,9 @@ namespace Rediscuss.ForumService.Controllers
             var existingSubscription = _context.Subscriptions.Find(s => s.SubredisId == subredisId && s.UserId == userId && s.IsDeleted == false).FirstOrDefault();
 
             if(existingSubscription != null) { return BadRequest("Bu subredis zaten takip ediliyor"); }
+
+            _context.Subscriptions.InsertOneAsync(new Subscription { SubredisId = subredisId, IsDeleted = false, UserId = }); 
+            return Ok("Subredis Takip Edildi");
         }
     }
 }
