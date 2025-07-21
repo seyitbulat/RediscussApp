@@ -61,6 +61,10 @@ namespace Rediscuss.ForumService.Controllers
 
             var userRoles = await _context.UserRoles.Find(u => u.UserId == targetUserId && u.IsDeleted == false).ToListAsync();
 
+            var isUserExists = await _context.FormUsers.Find(u => u.UserId == targetUserId).AnyAsync();
+
+            if (!isUserExists) { return BadRequest("Bu Kullanıcı Bulunamadı"); }
+
             var roleIds = userRoles.Select(u => u.RoleId).ToList();
 
             if (roleIds.Count == 0) { return Ok(new List<RoleDto> ()); }
@@ -78,6 +82,7 @@ namespace Rediscuss.ForumService.Controllers
                 CreatedBy = userId
             });
 
+
             return Ok(roleDtos);
         }
 
@@ -93,6 +98,10 @@ namespace Rediscuss.ForumService.Controllers
             var role = _context.Roles.Find(r => r.RoleName == roleName).FirstOrDefault();
 
             if(role == null) { return BadRequest("Bu rol bulunamadı"); }
+
+            var isUserExists = await _context.FormUsers.Find(u => u.UserId == targetUserId).AnyAsync();
+
+            if (!isUserExists) { return BadRequest("Bu Kullanıcı Bulunamadı"); }
 
             var userRoleFilter = Builders<UserRole>.Filter.And(
                     Builders<UserRole>.Filter.Eq(u => u.UserId, targetUserId),
