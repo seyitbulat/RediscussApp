@@ -42,6 +42,14 @@ namespace Rediscuss.ForumService.Controllers
 
             await _context.Subredises.InsertOneAsync(subredis);
 
+            var subscription = new Subscription
+            {
+                UserId = userId,
+                SubredisId = subredis.Id 
+            };
+
+            await _context.Subscriptions.InsertOneAsync(subscription);
+
             return CreatedAtAction(nameof(CreateSubredis), new { id = subredis.Id }, subredis);
         }
 
@@ -63,8 +71,9 @@ namespace Rediscuss.ForumService.Controllers
 
             if(existingSubscription != null) { return BadRequest("Bu subredis zaten takip ediliyor"); }
 
-            _context.Subscriptions.InsertOneAsync(new Subscription { SubredisId = subredisId, IsDeleted = false, UserId = }); 
+            await _context.Subscriptions.InsertOneAsync(new Subscription { SubredisId = subredisId, IsDeleted = false, UserId = userId}); 
             return Ok("Subredis Takip Edildi");
         }
+
     }
 }
