@@ -28,5 +28,7 @@ namespace Rediscuss.ForumService.Data
 
         public IMongoCollection<Permission> Permissions => _database.GetCollection<Permission>("Permissions");
         public IMongoCollection<Role> Roles => _database.GetCollection<Role>("Roles");
+
+        public IMongoCollection<FormUser> FormUsers => _database.GetCollection<FormUser>("FormUsers");
     }
 }

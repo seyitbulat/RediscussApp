@@ -6,9 +6,19 @@ using Microsoft.OpenApi.Models;
 using Rediscuss.IdentityService.Data;
 using System.Security.Claims;
 using System.Text;
+using MassTransit;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddMassTransit(config =>
+{
+    config.UsingRabbitMq((ctx, cfg) =>
+    {
+        cfg.Host("localhost", "/", h => { h.Username("guest"); h.Password("guest"); });
+        cfg.ConfigureEndpoints(ctx);
+    });
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<IdentityContext>(options =>

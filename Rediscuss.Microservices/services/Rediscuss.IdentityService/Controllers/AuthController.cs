@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MassTransit;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Rediscuss.IdentityService.Data;
@@ -7,6 +8,7 @@ using Rediscuss.IdentityService.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using static Rediscuss.Shared.Contracts.UserContracts;
 
 namespace Rediscuss.IdentityService.Controllers
 {
@@ -16,11 +18,13 @@ namespace Rediscuss.IdentityService.Controllers
     {
         private readonly IdentityContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public AuthController(IdentityContext context, IConfiguration configuration)
+        public AuthController(IdentityContext context, IConfiguration configuration, IPublishEndpoint publishEndpoint)
         {
             _context = context;
             _configuration = configuration;
+            _publishEndpoint = publishEndpoint;
         }
 
         [HttpPost("register")]
@@ -50,6 +54,8 @@ namespace Rediscuss.IdentityService.Controllers
                 };
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
+
+            await _publishEndpoint.Publish(new UserCreated(user.UserId, user.Username));
 
             return Ok(new { Message = "Kullanıcı başarıyla oluşturuldu." });
         }

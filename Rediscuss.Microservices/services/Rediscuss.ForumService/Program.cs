@@ -1,6 +1,8 @@
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Rediscuss.ForumService.Consumers;
 using Rediscuss.ForumService.Data;
 using StackExchange.Redis;
 using System.Security.Claims;
@@ -10,6 +12,22 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
+
+
+builder.Services.AddMassTransit(config =>
+{
+
+    config.AddConsumers(typeof(Program).Assembly);
+    config.UsingRabbitMq((ctx, cfg) =>
+    {
+        cfg.Host("localhost", "/", h => { h.Username("guest"); h.Password("guest"); });
+
+        cfg.ReceiveEndpoint("user-created-event-queue", e =>
+        {
+            e.ConfigureConsumer<UserCreatedConsumer>(ctx);
+        });
+    });
+});
 
 
 builder.Services.AddControllers();
