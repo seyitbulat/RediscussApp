@@ -5,7 +5,7 @@ namespace Rediscuss.ForumService.Entities
     public class FormUser
     {
         [BsonId]
-        public int UserId { get; set; }
+        public int Id { get; set; }
         public string Username { get; set; }
     }
 }

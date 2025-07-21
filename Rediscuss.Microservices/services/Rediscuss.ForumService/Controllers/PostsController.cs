@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MassTransit.Initializers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -24,7 +25,7 @@ namespace Rediscuss.ForumService.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles ="User")]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> CreatePost([FromBody] CreatePostDto createDto)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -51,7 +52,7 @@ namespace Rediscuss.ForumService.Controllers
 
             await _context.Posts.InsertOneAsync(post);
 
-            return Ok(post); 
+            return Ok(post);
         }
 
 
@@ -61,7 +62,7 @@ namespace Rediscuss.ForumService.Controllers
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if(!int.TryParse(userIdString, out int userId))
+            if (!int.TryParse(userIdString, out int userId))
             {
                 return Unauthorized();
             }
@@ -90,7 +91,7 @@ namespace Rediscuss.ForumService.Controllers
 
 
         [HttpGet("GetBySubredis/{subredisId}")]
-        public async Task<IActionResult> GetPostsForSubredis(string subredisId)
+        public async Task<IActionResult> GetPostsForSubredis(string subredisId, [FromQuery] int page = 1, int pageSize = 25)
         {
             var subredisIsExists = await _context.Subredises.Find(s => s.Id == subredisId && s.IsDeleted == false).AnyAsync();
 
@@ -101,7 +102,19 @@ namespace Rediscuss.ForumService.Controllers
             }
 
 
-            var posts = await _context.Posts.Find(p => p.SubredisId == subredisId && p.IsDeleted == false).ToListAsync();
+            var posts = await _context.Posts.Aggregate()
+                .Match(p => p.IsDeleted == false && p.SubredisId == subredisId)
+                .SortByDescending(p => p.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Limit(pageSize)
+                .Lookup<Post, FormUser, PostWithUser>(
+                    _context.FormUsers,
+                    post => post.CreatedBy,
+                    user => user.Id,
+                    result => result.FormUser
+                ).ToListAsync();
+
+
             var postDtos = posts.Select(async p =>
             {
                 var voteKey = $"post:votes:{p.Id}";
@@ -120,11 +133,66 @@ namespace Rediscuss.ForumService.Controllers
                     CreatedAt = p.CreatedAt,
                     CreatedBy = p.CreatedBy,
                     UpdatedAt = p.UpdatedAt,
-                    UpdatedBy = p.UpdatedBy
+                    UpdatedBy = p.UpdatedBy,
+                    CreatedByUserName = p.FormUser.Username
                 };
 
             }).ToList();
 
+
+            return Ok(postDtos);
+        }
+
+
+        [HttpGet("feed")]
+        [Authorize]
+        public async Task<IActionResult> GetHomePageFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 25)
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(userIdString, out int userId))
+            {
+                return Unauthorized();
+            }
+
+
+            var subcribedSubredisIds = await _context.Subscriptions.Find(s => s.UserId == userId && s.IsDeleted == false).Project(s => s.SubredisId).ToListAsync();
+
+            if (!subcribedSubredisIds.Any()) { return Ok(new List<Post>()); }
+
+            var filter = Builders<Post>.Filter.Eq(p => p.IsDeleted, false) & Builders<Post>.Filter.In(p => p.SubredisId, subcribedSubredisIds);
+
+            var posts = await _context.Posts.Find(filter).SortByDescending(p => p.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Limit(pageSize)
+                .ToListAsync();
+
+            var tasks = posts.Select(async p =>
+            {
+                var voteKey = $"post:votes:{p.Id}";
+
+                var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
+                var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
+                await Task.WhenAll(upvotesTask, downvotesTask);
+
+                return new PostDto
+                {
+                    Id = p.Id,
+                    Content = p.Content,
+                    Title = p.Title,
+                    SubredisId = p.SubredisId,
+                    UpVotes = (int)await upvotesTask,
+                    DownVotes = (int)await downvotesTask,
+                    CreatedAt = p.CreatedAt,
+                    CreatedBy = p.CreatedBy,
+                    UpdatedAt = p.UpdatedAt,
+                    UpdatedBy = p.UpdatedBy
+                };
+
+
+            });
+
+            var postDtos = await Task.WhenAll(tasks);
 
             return Ok(postDtos);
         }

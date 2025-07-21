@@ -18,11 +18,11 @@ namespace Rediscuss.ForumService.Consumers
         {
             var message = context.Message;
 
-            var existingUser = _context.FormUsers.Find(u => u.UserId == message.UserId).Any();
+            var existingUser = _context.FormUsers.Find(u => u.Id == message.UserId).Any();
 
             if (!existingUser)
             {
-                await _context.FormUsers.InsertOneAsync(new Entities.FormUser { UserId = message.UserId, Username = message.Username });
+                await _context.FormUsers.InsertOneAsync(new Entities.FormUser { Id = message.UserId, Username = message.Username });
             }
         }
     }
