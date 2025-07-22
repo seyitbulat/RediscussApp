@@ -24,5 +24,9 @@ namespace Rediscuss.ForumService.Entities
         //Iliskiler
         [BsonRepresentation(BsonType.ObjectId)]
         public string PostId { get; set; }
+
+        [BsonRepresentation(BsonType.ObjectId)]
+        [BsonIgnoreIfNull]
+        public string ParentCommentId { get; set; }
     }
 }
