@@ -12,6 +12,12 @@ namespace Rediscuss.ForumService.DTOs
         public int? CreatedBy { get; set; }
 
 
+        // Vote
+
+        public int UpVotes { get; set; }
+        public int DownVotes { get; set; }
+
+
         //Iliskiler
         public string PostId { get; set; }
         public string ParentCommentId { get; set; }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MassTransit.Initializers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -6,6 +7,7 @@ using Rediscuss.ForumService.Data;
 using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
 using Rediscuss.ForumService.Entities.Lookup;
+using StackExchange.Redis;
 using System.Security.Claims;
 
 namespace Rediscuss.ForumService.Controllers
@@ -15,10 +17,12 @@ namespace Rediscuss.ForumService.Controllers
     public class CommentsController : ControllerBase
     {
         private readonly ForumContext _context;
+        private readonly IDatabase _redisDb;
 
-        public CommentsController(ForumContext context)
+        public CommentsController(ForumContext context, IConnectionMultiplexer redis)
         {
             _context = context;
+            _redisDb = redis.GetDatabase();
         }
 
         [HttpPost]
@@ -73,21 +77,39 @@ namespace Rediscuss.ForumService.Controllers
                     result => result.FormUsers
                 ).ToListAsync();
 
-            var commentMap = allComments.ToDictionary(
+
+            var tasks = allComments.ToDictionary(
                 c => c.Id,
-                c => new CommentDto
+                async c =>
                 {
-                    Id = c.Id,
-                    PostId = c.PostId,
-                    Content = c.Content,
-                    CreatedBy = c.CreatedBy,
-                    CreatedAt= c.CreatedAt,
-                    ParentCommentId= c.ParentCommentId,
-                    CreatedByUsername = c.FormUsers.FirstOrDefault()?.Username ?? ""
+                    var voteKey = $"comment:votes:{c.Id}";
+
+                    var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
+                    var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
+
+                    await Task.WhenAll(upvotesTask, downvotesTask);
+
+                    return new CommentDto
+                    {
+                        Id = c.Id,
+                        PostId = c.PostId,
+                        Content = c.Content,
+                        CreatedBy = c.CreatedBy,
+                        CreatedAt = c.CreatedAt,
+                        ParentCommentId = c.ParentCommentId,
+                        CreatedByUsername = c.FormUsers.FirstOrDefault()?.Username ?? "",
+                        UpVotes = (int) await upvotesTask,
+                        DownVotes = (int) await downvotesTask
+                    };
                 }
                 );
 
-            var nestedComments = new List<CommentDto>();
+
+            var commentDtos = await Task.WhenAll(tasks.Values);
+            var commentMap = tasks.Keys
+                .Zip(commentDtos, (key, dto) => new { key, dto })
+                .ToDictionary(x => x.key, x => x.dto);
+                        var nestedComments = new List<CommentDto>();
 
             foreach ( var comment in commentMap.Values)
             {
@@ -103,6 +125,7 @@ namespace Rediscuss.ForumService.Controllers
 
             return Ok(nestedComments);
         }
+
 
     }
 }

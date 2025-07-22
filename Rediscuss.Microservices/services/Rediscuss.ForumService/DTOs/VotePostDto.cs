@@ -2,7 +2,7 @@
 
 namespace Rediscuss.ForumService.DTOs
 {
-    public class VoteDto
+    public class VotePostDto
     {
         [Required]
         public string PostId { get; set; }
