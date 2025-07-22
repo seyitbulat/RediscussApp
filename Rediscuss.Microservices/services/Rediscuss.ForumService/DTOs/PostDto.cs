@@ -24,5 +24,8 @@
 
 
         public string CreatedByUserName { get; set; }
+
+
+        public string SubredisName { get; set; }
     }
 }

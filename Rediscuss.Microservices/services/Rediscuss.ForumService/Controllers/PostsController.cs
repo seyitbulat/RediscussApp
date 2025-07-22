@@ -8,6 +8,7 @@ using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
 using StackExchange.Redis;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Rediscuss.ForumService.Controllers
 {
@@ -107,20 +108,30 @@ namespace Rediscuss.ForumService.Controllers
                 .SortByDescending(p => p.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Limit(pageSize)
-                .Lookup<Post, FormUser, PostWithUser>(
+                .Lookup<Post, FormUser, PostWithDetails>(
                     _context.FormUsers,
                     post => post.CreatedBy,
                     user => user.Id,
-                    result => result.FormUser
-                ).ToListAsync();
+                    result => result.FormUsers
+                )
+                .Lookup<PostWithDetails, Subredis, PostWithDetails>(
+                    _context.Subredises,
+                    post => post.SubredisId,
+                    subredis => subredis.Id,
+                    result => result.Subredises
+                )
+                .ToListAsync();
 
 
-            var postDtos = posts.Select(async p =>
+            var tasks = posts.Select(async p =>
             {
                 var voteKey = $"post:votes:{p.Id}";
 
                 var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
                 var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
+
+                await Task.WhenAll(upvotesTask, downvotesTask);
+
 
                 return new PostDto
                 {
@@ -134,11 +145,12 @@ namespace Rediscuss.ForumService.Controllers
                     CreatedBy = p.CreatedBy,
                     UpdatedAt = p.UpdatedAt,
                     UpdatedBy = p.UpdatedBy,
-                    CreatedByUserName = p.FormUser.Username
+                    CreatedByUserName = p.FormUsers.FirstOrDefault()?.Username ?? "",
+                    SubredisName = p.Subredises.FirstOrDefault()?.Name ?? ""
                 };
-
             }).ToList();
 
+            var postDtos = await Task.WhenAll(tasks);
 
             return Ok(postDtos);
         }
@@ -162,9 +174,23 @@ namespace Rediscuss.ForumService.Controllers
 
             var filter = Builders<Post>.Filter.Eq(p => p.IsDeleted, false) & Builders<Post>.Filter.In(p => p.SubredisId, subcribedSubredisIds);
 
-            var posts = await _context.Posts.Find(filter).SortByDescending(p => p.CreatedAt)
+            var posts = await _context.Posts.Aggregate()
+                .Match(p => p.IsDeleted == false && subcribedSubredisIds.Contains(p.SubredisId))
+                .SortByDescending(p => p.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Limit(pageSize)
+                .Lookup<Post, FormUser, PostWithDetails>(
+                    _context.FormUsers,
+                    post => post.CreatedBy,
+                    user => user.Id,
+                    result => result.FormUsers
+                )
+                .Lookup<PostWithDetails, Subredis, PostWithDetails>(
+                    _context.Subredises,
+                    post => post.SubredisId,
+                    subredis => subredis.Id,
+                    result => result.Subredises
+                )
                 .ToListAsync();
 
             var tasks = posts.Select(async p =>
@@ -186,7 +212,9 @@ namespace Rediscuss.ForumService.Controllers
                     CreatedAt = p.CreatedAt,
                     CreatedBy = p.CreatedBy,
                     UpdatedAt = p.UpdatedAt,
-                    UpdatedBy = p.UpdatedBy
+                    UpdatedBy = p.UpdatedBy,
+                    CreatedByUserName = p.FormUsers.FirstOrDefault()?.Username ?? "",
+                    SubredisName = p.Subredises.FirstOrDefault()?.Name ?? ""
                 };
 
 
