@@ -6,7 +6,9 @@ using MongoDB.Driver;
 using Rediscuss.ForumService.Data;
 using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
+using Rediscuss.Shared.Contracts;
 using StackExchange.Redis;
+using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -14,7 +16,7 @@ namespace Rediscuss.ForumService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PostsController : ControllerBase
+    public class PostsController : CustomBaseController
     {
         private readonly ForumContext _context;
         private readonly IDatabase _redisDb;
@@ -32,13 +34,13 @@ namespace Rediscuss.ForumService.Controllers
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdString, out int userId))
             {
-                return Unauthorized();
+                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı",201));
             }
 
             var subredisExists = await _context.Subredises.Find(s => s.Id == createDto.SubredisId).AnyAsync();
             if (!subredisExists)
             {
-                return BadRequest("Geçersiz Subredis ID.");
+                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz Subredis ID", 204));
             }
 
             var post = new Post
@@ -53,7 +55,7 @@ namespace Rediscuss.ForumService.Controllers
 
             await _context.Posts.InsertOneAsync(post);
 
-            return Ok(post);
+            return CreateActionResult(ApiResponse<Post>.Success(post, 201));
         }
 
 
@@ -62,17 +64,17 @@ namespace Rediscuss.ForumService.Controllers
         public async Task<IActionResult> DeletePost(DeletePostDto deleteDto)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
             if (!int.TryParse(userIdString, out int userId))
             {
-                return Unauthorized();
+                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204));
             }
 
             var postExists = _context.Posts.Find(p => p.Id == deleteDto.PostId).Any();
 
             if (!postExists)
             {
-                return BadRequest("Geçersiz Post ID.");
+                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz Post ID", 204));
+
             }
 
             var update = Builders<Post>.Update
@@ -84,10 +86,12 @@ namespace Rediscuss.ForumService.Controllers
 
             if (result.ModifiedCount == 0)
             {
-                return StatusCode(500, "Silme işlemi başarısız.");
+                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Silme işlemi başarısız.", 500));
+
             }
 
-            return Ok("Post başarıyla silindi (soft delete).");
+            return CreateActionResult(ApiResponse<NoDataDto>.Success(200));
+
         }
 
 
@@ -99,7 +103,7 @@ namespace Rediscuss.ForumService.Controllers
 
             if (!subredisIsExists)
             {
-                return BadRequest("Subredis bulunamadı");
+                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz Subredis ID", 204));
             }
 
 
@@ -152,7 +156,7 @@ namespace Rediscuss.ForumService.Controllers
 
             var postDtos = await Task.WhenAll(tasks);
 
-            return Ok(postDtos);
+            return CreateActionResult(ApiResponse<IEnumerable<PostDto>>.Success(postDtos,200));
         }
 
 
@@ -161,10 +165,9 @@ namespace Rediscuss.ForumService.Controllers
         public async Task<IActionResult> GetHomePageFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 25)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
             if (!int.TryParse(userIdString, out int userId))
             {
-                return Unauthorized();
+                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 201));
             }
 
 
@@ -222,7 +225,8 @@ namespace Rediscuss.ForumService.Controllers
 
             var postDtos = await Task.WhenAll(tasks);
 
-            return Ok(postDtos);
+            return CreateActionResult(ApiResponse<IEnumerable<PostDto>>.Success(postDtos, 200));
+
         }
     }
 }

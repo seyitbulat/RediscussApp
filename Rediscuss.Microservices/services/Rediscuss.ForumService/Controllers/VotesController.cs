@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using Rediscuss.ForumService.Data;
 using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
+using Rediscuss.Shared.Contracts;
 using StackExchange.Redis;
 using System.Security.Claims;
 
@@ -12,7 +13,7 @@ namespace Rediscuss.ForumService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class VotesController : ControllerBase
+    public class VotesController : CustomBaseController
     {
         private readonly ForumContext _context;
         private readonly IDatabase _redisDb;
@@ -69,13 +70,20 @@ namespace Rediscuss.ForumService.Controllers
 
             if (!result)
             {
-                return StatusCode(500, "Oy işlenirken bir hata oluştu.");
+                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Oy işlenirken bir hata oluştu.", 500));
             }
 
             var upvotes = (int)await _redisDb.HashGetAsync(voteKey, "upvotes");
             var downvotes = (int)await _redisDb.HashGetAsync(voteKey, "downvotes");
 
-            return Ok(new { upvotes, downvotes });
+            var voteResultDto = new VoteResultDto
+            {
+                UpVotes = upvotes,
+                DownVotes = downvotes
+            };
+
+            return CreateActionResult(ApiResponse<VoteResultDto>.Success(voteResultDto, 200));
+
         }
 
         [HttpPost("comment")]
@@ -132,7 +140,13 @@ namespace Rediscuss.ForumService.Controllers
             var upvotes = (int)await _redisDb.HashGetAsync(voteKey, "upvotes");
             var downvotes = (int)await _redisDb.HashGetAsync(voteKey, "downvotes");
 
-            return Ok(new { upvotes, downvotes });
+            var voteResultDto = new VoteResultDto
+            {
+                UpVotes = upvotes,
+                DownVotes = downvotes
+            };
+
+            return CreateActionResult(ApiResponse<VoteResultDto>.Success(voteResultDto, 200));
 
         }
     }

@@ -5,13 +5,14 @@ using MongoDB.Driver;
 using Rediscuss.ForumService.Data;
 using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
+using Rediscuss.Shared.Contracts;
 using System.Security.Claims;
 
 namespace Rediscuss.ForumService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RolesController : ControllerBase
+    public class RolesController : CustomBaseController
     {
         private readonly ForumContext _context;
 
@@ -38,7 +39,8 @@ namespace Rediscuss.ForumService.Controllers
 
             await _context.Roles.InsertOneAsync(role);
 
-            return Ok("İşlem Başarılı");
+            return CreateActionResult(ApiResponse<NoDataDto>.Success(201));
+
         }
 
 

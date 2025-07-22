@@ -4,13 +4,14 @@ using MongoDB.Driver;
 using Rediscuss.ForumService.Data;
 using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
+using Rediscuss.Shared.Contracts;
 using System.Security.Claims;
 
 namespace Rediscuss.ForumService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UsersController : CustomBaseController
     {
         private readonly ForumContext _context;
 
@@ -25,17 +26,17 @@ namespace Rediscuss.ForumService.Controllers
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if(!int.TryParse(userIdString, out userId)) { return Unauthorized("Kullanıcı Bulunamadı"); }
+            if(!int.TryParse(userIdString, out userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204)); }
 
 
 
             var role = _context.Roles.Find(s => s.RoleName == roleName).FirstOrDefault();
             
-            if(role == null) { return BadRequest("Rol Bulunamadı"); }
+            if(role == null) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz Role ID", 204)); }
 
             var isExituserRole = _context.UserRoles.Find(u => u.UserId == userId && u.RoleId == role.Id && u.IsDeleted == false).Any();
 
-            if(isExituserRole) { return BadRequest("Kullanıcın bu rolü var"); }
+            if(isExituserRole) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bu Role Sahip", 204)); ; }
 
             var userRole = new UserRole
             {
@@ -47,7 +48,8 @@ namespace Rediscuss.ForumService.Controllers
 
             await _context.UserRoles.InsertOneAsync(userRole);
 
-            return Ok("Kullanıcıya Rol Atandı");
+            return CreateActionResult(ApiResponse<NoDataDto>.Success(201));
+
         }
 
 
@@ -57,13 +59,13 @@ namespace Rediscuss.ForumService.Controllers
             int userId;
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (!int.TryParse(userIdString, out userId)) { return Unauthorized("Kullanıcı Bulunamadı"); }
+            if (!int.TryParse(userIdString, out userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204)); }
 
             var userRoles = await _context.UserRoles.Find(u => u.UserId == targetUserId && u.IsDeleted == false).ToListAsync();
 
             var isUserExists = await _context.FormUsers.Find(u => u.Id == targetUserId).AnyAsync();
 
-            if (!isUserExists) { return BadRequest("Bu Kullanıcı Bulunamadı"); }
+            if (!isUserExists) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz User ID", 204)); }
 
             var roleIds = userRoles.Select(u => u.RoleId).ToList();
 
@@ -83,7 +85,7 @@ namespace Rediscuss.ForumService.Controllers
             });
 
 
-            return Ok(roleDtos);
+            return CreateActionResult(ApiResponse<IEnumerable<RoleDto>>.Success(200));
         }
 
 
@@ -93,15 +95,15 @@ namespace Rediscuss.ForumService.Controllers
             int userId;
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (!int.TryParse(userIdString, out userId)) { return Unauthorized("Kullanıcı Bulunamadı"); }
+            if (!int.TryParse(userIdString, out userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204)); }
 
             var role = _context.Roles.Find(r => r.RoleName == roleName).FirstOrDefault();
 
-            if(role == null) { return BadRequest("Bu rol bulunamadı"); }
+            if(role == null) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçeresiz Role ID", 204)); }
 
             var isUserExists = await _context.FormUsers.Find(u => u.Id == targetUserId).AnyAsync();
 
-            if (!isUserExists) { return BadRequest("Bu Kullanıcı Bulunamadı"); }
+            if (!isUserExists) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz User ID", 204)); }
 
             var userRoleFilter = Builders<UserRole>.Filter.And(
                     Builders<UserRole>.Filter.Eq(u => u.UserId, targetUserId),
@@ -111,7 +113,7 @@ namespace Rediscuss.ForumService.Controllers
 
             var userRole = _context.UserRoles.Find(userRoleFilter).FirstOrDefault();
 
-            if(userRole == null) { return BadRequest("Kullanıcı bu role sahip değil"); }
+            if(userRole == null) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bu Role Sahip Değil", 204)); }    
 
             var update = Builders<UserRole>.Update
                 .Set(u => u.IsDeleted, true)
@@ -120,8 +122,8 @@ namespace Rediscuss.ForumService.Controllers
 
 
             await _context.UserRoles.UpdateOneAsync(userRoleFilter, update);
+            return CreateActionResult(ApiResponse<IEnumerable<RoleDto>>.Success(200));
 
-            return Ok("Kullanıcı Rolü başarıyla silindi.");
         }
 
 
@@ -155,7 +157,7 @@ namespace Rediscuss.ForumService.Controllers
                 CreatedAt = s.CreatedAt
             }).ToList();
 
-            return Ok(subredisDtos);
+            return CreateActionResult(ApiResponse<IEnumerable<SubredisDto>>.Success(subredisDtos,200));
         }
     }
 }

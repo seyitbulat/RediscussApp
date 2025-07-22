@@ -7,6 +7,7 @@ using Rediscuss.ForumService.Data;
 using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
 using Rediscuss.ForumService.Entities.Lookup;
+using Rediscuss.Shared.Contracts;
 using StackExchange.Redis;
 using System.Security.Claims;
 
@@ -14,7 +15,7 @@ namespace Rediscuss.ForumService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CommentsController : ControllerBase
+    public class CommentsController : CustomBaseController
     {
         private readonly ForumContext _context;
         private readonly IDatabase _redisDb;
@@ -31,11 +32,11 @@ namespace Rediscuss.ForumService.Controllers
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if(!int.TryParse(userIdString, out var userId)) { return Unauthorized(); }
+            if(!int.TryParse(userIdString, out var userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 201)); }
 
             var isCommentExits = await _context.Posts.Find(c => c.Id == createDto.PostId && c.IsDeleted == false).AnyAsync();
 
-            if (!isCommentExits) { return BadRequest(); }
+            if (!isCommentExits) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz Comment ID", 204)); }
 
             var comment = new Comment
             {
@@ -60,7 +61,8 @@ namespace Rediscuss.ForumService.Controllers
                 CreatedByUsername = user?.Username ?? "bilinmiyor"
             };
 
-            return Ok(commentDto);
+            return CreateActionResult(ApiResponse<CommentDto>.Success(commentDto, 201));
+
         }
 
 
@@ -123,7 +125,7 @@ namespace Rediscuss.ForumService.Controllers
                 }
             }
 
-            return Ok(nestedComments);
+            return CreateActionResult(ApiResponse<IEnumerable<CommentDto>>.Success(nestedComments, 200));
         }
 
 
