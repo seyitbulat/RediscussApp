@@ -3,6 +3,7 @@ import api from "@/lib/api";
 import { Alert, Box, Button, CircularProgress, Container, TextField, Typography } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 
 interface LoginData{
@@ -11,6 +12,8 @@ interface LoginData{
 }
 
 export default function LoginPage(){
+    const router = useRouter();
+
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
@@ -24,6 +27,7 @@ export default function LoginPage(){
             if(token){
                 localStorage.setItem("token", token);
             }
+            router.replace('/')
         }
     });
 
