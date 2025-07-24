@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={roboto.variable}>
-      <body>
+      <body style={{margin: 0}}>
         <ReactQueryProvider>
           <AppRouterCacheProvider>
             <ThemeProvider theme={theme}>
