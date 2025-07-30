@@ -12,7 +12,7 @@ export default function Home() {
         <div className="main flex w-full flex-grow">
           <Sidebar/>
 
-          <main className="flex-grow">
+          <main className="flex-grow p-3">
             Content
           </main>
         </div>
