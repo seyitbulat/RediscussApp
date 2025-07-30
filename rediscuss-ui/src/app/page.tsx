@@ -1,5 +1,6 @@
 import AuthGuard from "@/components/AuthGuard";
 import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
 import Image from "next/image";
 
 export default function Home() {
@@ -9,9 +10,7 @@ export default function Home() {
         <Header />
 
         <div className="main flex w-full flex-grow">
-          <div className="w-40 bg-accent-500">
-            Sidebar
-          </div>
+          <Sidebar/>
 
           <main className="flex-grow">
             Content
