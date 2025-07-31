@@ -5,6 +5,3 @@ export type HeaderData = {
     }
 }
 
-export async function getHeaderData() : Promise<HeaderData>{
-    
-}

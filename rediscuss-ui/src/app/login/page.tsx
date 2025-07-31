@@ -14,26 +14,33 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
 
-    const handleLogin = async (e: React.FormEvent<HTMLFormElement>) =>{
+    const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
         try {
-            const response = await api.post('/auth/login', {username, password});
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password, rememberMe })
+            });
 
-            const token = response.data.token;
+            const data = await response.json();
 
-            if(token){
-                localStorage.setItem('token', token);
+            if (response.ok) {
+                router.refresh();
                 router.push('/');
             }else{
-                setError('Giriş Yapılırken Hata Oluştu');
+                setError(data.message || 'Giriş Yapılırken Hata Oluştu');
             }
         } catch (err: any) {
             setError(err.response?.data?.message || 'Geçersiz Kullanıcı Adı veya Parola');
-        } finally{
+        } finally {
             setIsLoading(false);
         }
     };
@@ -100,7 +107,7 @@ export default function Login() {
 
                     <div className="relative mt-2 flex items-center justify-between text-sm">
                         <label className="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" className="w-4 h-4 text-secondary-500 border-background-500 checked:bg-primary-300 focus:ring-primary-200" />
+                            <input type="checkbox" className="w-4 h-4 text-secondary-500 border-background-500 checked:bg-primary-300 focus:ring-primary-200" onChange={(e) => setRememberMe(e.target.checked)}/>
                             <span>Beni Hatırla</span>
                         </label>
                         <a href="#" className="text-accent-500">

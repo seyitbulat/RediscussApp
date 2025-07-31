@@ -5,18 +5,16 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <AuthGuard>
-      <div className="h-screen flex flex-col">
-        <Header />
+    <div className="h-screen flex flex-col">
+      <Header />
 
-        <div className="main flex w-full flex-grow">
-          <Sidebar/>
+      <div className="main flex w-full flex-grow">
+        <Sidebar />
 
-          <main className="flex-grow p-3">
-            Content
-          </main>
-        </div>
+        <main className="flex-grow p-3">
+          Content
+        </main>
       </div>
-    </AuthGuard>
+    </div>
   );
 }
