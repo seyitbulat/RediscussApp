@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Rediscuss.ForumService.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("ForumApi/[controller]")]
     [ApiController]
     public class PostsController : CustomBaseController
     {

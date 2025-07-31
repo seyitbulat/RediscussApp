@@ -12,7 +12,7 @@ using static Rediscuss.Shared.Contracts.UserContracts;
 
 namespace Rediscuss.IdentityService.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("IdentityApi/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
     {

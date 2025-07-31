@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace Rediscuss.IdentityService.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("IdentityApi/[controller]")]
     [ApiController]
     [Authorize]
     public class UsersController : ControllerBase
