@@ -1,4 +1,5 @@
 import axios from "axios";
+import { cookies } from "next/headers";
 
 
 const API_BASE_URL = process.env.API_BASE_URL;
@@ -9,11 +10,11 @@ const api = axios.create({
 });
 
 
-api.interceptors.request.use((config) => {
-    if(typeof window !== 'undefined'){
-        const token = localStorage.getItem('token');
+api.interceptors.request.use(async (config) => {
+    if (typeof window !== 'undefined') {
+        const token = (await cookies()).get('token');
 
-        if(token){
+        if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
     }
