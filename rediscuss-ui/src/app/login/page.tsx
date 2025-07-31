@@ -1,7 +1,8 @@
 'use client';
 
+import LoadingOverlay from "@/components/Static/LoadingOverlay";
 import api from "@/lib/api";
-import { EyeIcon, EyeOffIcon, UserIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, Loader2, UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -47,6 +48,11 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-accent-50 to-primary-50 via-white">
+            
+            {isLoading && (
+                <LoadingOverlay/>
+            )}
+
             <div className="inset-0 overflow-hidden absolute">
                 <div className="absolute w-40 h-40 rounded-full -top-10 -right-10 opacity-10 animate-pulse bg-primary-500"></div>
                 <div className="absolute w-60 h-60 rounded-full -bottom-10 -left-10 opacity-10 animate-pulse bg-primary-600"></div>
@@ -115,7 +121,7 @@ export default function Login() {
                         </a>
                     </div>
                     <div className="relative mt-4 flex justify-center">
-                        <button className="w-full h-10 bg-primary-500 rounded shadow-lg text-white font-bold hover:bg-primary-400 transition-colors">Giriş Yap</button>
+                        <button className="w-full h-10 bg-primary-500 rounded shadow-lg text-white font-bold hover:bg-primary-400 transition-colors" disabled={isLoading} >Giriş Yap</button>
                     </div>
                 </form>
             </div>
