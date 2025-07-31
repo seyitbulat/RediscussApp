@@ -36,7 +36,7 @@
                     "Path": "/gateway/Forum/{**catch-all}"
                 },
                 "Transforms": [
-                    { "PathPattern": "/IdentityApi/{**catch-all}" }
+                    { "PathPattern": "/ForumApi/{**catch-all}" }
                 ]
             }
         },
