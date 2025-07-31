@@ -13,7 +13,7 @@ using System.Security.Claims;
 
 namespace Rediscuss.ForumService.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("ForumApi/[controller]")]
     [ApiController]
     public class CommentsController : CustomBaseController
     {
