@@ -8,34 +8,7 @@ $GatewayDir = Join-Path -Path $ServiceDir -ChildPath "Rediscuss.ApiGateway"
 # Önceki job'ları temizle (eğer varsa)
 Get-Job | Where-Object { $_.Name -like "Rediscuss.*" } | Remove-Job -Force
 
-<<<<<<< Updated upstream
-
-Write-Host "Docker konteynerleri '$($DockerComposeFile)' dosyasından başlatılıyor..." -ForegroundColor Cyan
-docker compose --file $DockerComposeFile --project-directory $MicroserviceDir up -d
-
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Docker konteynerleri başlatılamadı. Lütfen Docker Desktop'ın çalıştığından emin olun." -ForegroundColor Red
-    exit
-}
-
-Write-Host "Veritabanlarının hazır olması için 20 saniye bekleniyor..." -ForegroundColor Yellow
-Start-Sleep -Seconds 20
-
-Write-Host "Solution '$($SolutionFile)' derleniyor..." -ForegroundColor Cyan
-dotnet build $SolutionFile
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Derleme başarısız oldu. Hataları kontrol edin." -ForegroundColor Red
-    exit
-}
-
-# IdentityService'i başlat
-Start-Job -Name "Rediscuss.IdentityService" -ScriptBlock {dotnet run --project $using:IdentityServiceDir}
-# Start-Process powershell -ArgumentList "-NoExit -Command `$host.ui.RawUI.WindowTitle = 'IdentityService'; dotnet run --project '$IdentityServiceDir'"
-=======
 Write-Host "Servisleri sıralı olarak başlatılıyor..." -ForegroundColor Cyan
->>>>>>> Stashed changes
 
 # 1. Identity Service'i başlat
 Write-Host "`n[1/3] Identity Service başlatılıyor..." -ForegroundColor Green

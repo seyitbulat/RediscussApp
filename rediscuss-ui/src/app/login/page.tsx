@@ -1,8 +1,7 @@
 'use client';
 
 import LoadingOverlay from "@/components/Static/LoadingOverlay";
-import api from "@/lib/api";
-import { EyeIcon, EyeOffIcon, Loader2, UserIcon } from "lucide-react";
+import { AlertCircle, EyeIcon, EyeOffIcon, Loader2, UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -65,6 +64,12 @@ export default function Login() {
                     </div>
                     <h1 className="text-2xl font-semibold mb-6 text-center select-none">Rediscuss</h1>
                 </div>
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 text-red-700">
+                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                        <span className="text-sm">{error}</span>
+                    </div>
+                )}
                 <form onSubmit={handleLogin}>
                     <div className="relative mt-2 group">
 
