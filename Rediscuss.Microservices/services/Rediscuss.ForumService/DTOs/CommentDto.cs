@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
+using Rediscuss.ForumService.Entities;
 
 namespace Rediscuss.ForumService.DTOs
 {
@@ -27,5 +28,20 @@ namespace Rediscuss.ForumService.DTOs
 
 
         public string CreatedByUsername { get; set; }
-    }
+
+
+		public CommentDto(Comment comment, int upVotes, int downVotes, string createdByUsername)
+		{
+			Id = comment.Id;
+			PostId = comment.PostId;
+			ParentCommentId = comment.ParentCommentId;
+			Content = comment.Content;
+			CreatedBy = comment.CreatedBy;
+			CreatedAt = comment.CreatedAt;
+			UpVotes = upVotes;
+			DownVotes = downVotes;
+			CreatedByUsername = createdByUsername ?? "bilinmiyor";
+			Replies = new List<CommentDto>();
+		}
+	}
 }

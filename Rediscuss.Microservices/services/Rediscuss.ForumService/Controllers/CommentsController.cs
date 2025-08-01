@@ -26,108 +26,91 @@ namespace Rediscuss.ForumService.Controllers
             _redisDb = redis.GetDatabase();
         }
 
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> CreateComment([FromBody]CreateCommentDto createDto)
-        {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+		[HttpPost]
+		[Authorize]
+		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<CommentDto>>), StatusCodes.Status201Created)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> CreateComment([FromBody] CreateCommentDto createDto)
+		{
+			var postExists = await _context.Posts.Find(p => p.Id == createDto.PostId && p.IsDeleted == false).AnyAsync();
+			if (postExists == false)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Yorum yapılmak istenen post bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
-            if(!int.TryParse(userIdString, out var userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 201)); }
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			var comment = new Comment
+			{
+				Content = createDto.Content,
+				PostId = createDto.PostId,
+				ParentCommentId = createDto.ParentCommentId,
+				CreatedBy = userId
+			};
+			await _context.Comments.InsertOneAsync(comment);
 
-            var isCommentExits = await _context.Posts.Find(c => c.Id == createDto.PostId && c.IsDeleted == false).AnyAsync();
+			var user = await _context.FormUsers.Find(u => u.Id == userId).FirstOrDefaultAsync();
+			var commentDto = new CommentDto(comment, 0, 0, user?.Username);
 
-            if (!isCommentExits) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz Comment ID", 204)); }
+			var resource = new JsonApiResource<CommentDto>
+			{
+				Type = "comments",
+				Id = comment.Id,
+				Attributes = commentDto
+			};
 
-            var comment = new Comment
-            {
-                Content = createDto.Content,
-                PostId = createDto.PostId,
-                ParentCommentId = createDto.ParentCommentId,
-                CreatedBy = userId
-            };
-            
-            await _context.Comments.InsertOneAsync(comment);
+			var meta = new Dictionary<string, object> { { "message", "Yorum başarıyla oluşturuldu." } };
+			var response = StandardApiResponse<JsonApiResource<CommentDto>>.Success(resource, meta: meta);
 
-            var user = await _context.FormUsers.Find(u => u.Id == userId).FirstOrDefaultAsync();
+			return StatusCode(StatusCodes.Status201Created, response);
+		}
 
-            var commentDto = new CommentDto
-            {
-                Id = comment.Id,
-                PostId = comment.PostId,
-                ParentCommentId = comment.ParentCommentId,
-                Content = comment.Content,
-                CreatedBy = comment.CreatedBy,
-                CreatedAt = comment.CreatedAt,
-                CreatedByUsername = user?.Username ?? "bilinmiyor"
-            };
+		[HttpGet("post/{postId}")]
+		[AllowAnonymous]
+		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<CommentDto>>>), StatusCodes.Status200OK)]
+		public async Task<IActionResult> GetCommentsForPost(string postId)
+		{
+			var allCommentsWithDetails = await _context.Comments.Aggregate()
+				.Match(c => c.PostId == postId && c.IsDeleted == false)
+				.SortBy(c => c.CreatedAt)
+				.Lookup<Comment, FormUser, CommentWithDetails>(_context.FormUsers, c => c.CreatedBy, u => u.Id, r => r.FormUsers)
+				.ToListAsync();
 
-            return CreateActionResult(ApiResponse<CommentDto>.Success(commentDto, 201));
+			var commentTasks = allCommentsWithDetails.Select(async c =>
+			{
+				var voteKey = $"comment:votes:{c.Id}";
+				var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
+				var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
+				await Task.WhenAll(upvotesTask, downvotesTask);
+				return new CommentDto(c, (int)await upvotesTask, (int)await downvotesTask, c.FormUsers.FirstOrDefault()?.Username);
+			});
 
-        }
+			var commentDtos = await Task.WhenAll(commentTasks);
+			var commentMap = commentDtos.ToDictionary(dto => dto.Id);
+			var nestedComments = new List<CommentDto>();
 
+			foreach (var comment in commentDtos)
+			{
+				if (!string.IsNullOrEmpty(comment.ParentCommentId) && commentMap.TryGetValue(comment.ParentCommentId, out var parentComment))
+				{
+					parentComment.Replies.Add(comment);
+				}
+				else
+				{
+					nestedComments.Add(comment);
+				}
+			}
 
-        [HttpGet("post/{postId}")]
-        public async Task<IActionResult> GetCommentsForPost(string postId)
-        {
-            var allComments = await _context.Comments.Aggregate()
-                .Match(c => c.PostId == postId)
-                .SortBy(c => c.CreatedAt)
-                .Lookup<Comment, FormUser, CommentWithDetails>(
-                    _context.FormUsers,
-                    c => c.CreatedBy,
-                    u => u.Id,
-                    result => result.FormUsers
-                ).ToListAsync();
+			var resources = nestedComments.Select(dto => new JsonApiResource<CommentDto>
+			{
+				Type = "comments",
+				Id = dto.Id,
+				Attributes = dto
+			}).ToList();
 
-
-            var tasks = allComments.ToDictionary(
-                c => c.Id,
-                async c =>
-                {
-                    var voteKey = $"comment:votes:{c.Id}";
-
-                    var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
-                    var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
-
-                    await Task.WhenAll(upvotesTask, downvotesTask);
-
-                    return new CommentDto
-                    {
-                        Id = c.Id,
-                        PostId = c.PostId,
-                        Content = c.Content,
-                        CreatedBy = c.CreatedBy,
-                        CreatedAt = c.CreatedAt,
-                        ParentCommentId = c.ParentCommentId,
-                        CreatedByUsername = c.FormUsers.FirstOrDefault()?.Username ?? "",
-                        UpVotes = (int) await upvotesTask,
-                        DownVotes = (int) await downvotesTask
-                    };
-                }
-                );
-
-
-            var commentDtos = await Task.WhenAll(tasks.Values);
-            var commentMap = tasks.Keys
-                .Zip(commentDtos, (key, dto) => new { key, dto })
-                .ToDictionary(x => x.key, x => x.dto);
-                        var nestedComments = new List<CommentDto>();
-
-            foreach ( var comment in commentMap.Values)
-            {
-                if(comment.ParentCommentId != null && commentMap.TryGetValue(comment.ParentCommentId, out var parentComment))
-                {
-                    parentComment.Replies.Add(comment);
-                }
-                else
-                {
-                    nestedComments.Add(comment);
-                }
-            }
-
-            return CreateActionResult(ApiResponse<IEnumerable<CommentDto>>.Success(nestedComments, 200));
-        }
+			return Ok(StandardApiResponse<List<JsonApiResource<CommentDto>>>.Success(resources));
+		}
 
 
-    }
+	}
 }

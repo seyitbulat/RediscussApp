@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Rediscuss.IdentityService.Data;
 using Rediscuss.IdentityService.DTOs;
 using Rediscuss.IdentityService.Entities;
+using Rediscuss.Shared.Contracts;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -12,113 +13,147 @@ using static Rediscuss.Shared.Contracts.UserContracts;
 
 namespace Rediscuss.IdentityService.Controllers
 {
-    [Route("IdentityApi/[controller]")]
-    [ApiController]
-    public class AuthController : ControllerBase
-    {
-        private readonly IdentityContext _context;
-        private readonly IConfiguration _configuration;
-        private readonly IPublishEndpoint _publishEndpoint;
+	[Route("IdentityApi/[controller]")]
+	[ApiController]
+	public class AuthController : ControllerBase
+	{
+		private readonly IdentityContext _context;
+		private readonly IConfiguration _configuration;
+		private readonly IPublishEndpoint _publishEndpoint;
 
-        public AuthController(IdentityContext context, IConfiguration configuration, IPublishEndpoint publishEndpoint)
-        {
-            _context = context;
-            _configuration = configuration;
-            _publishEndpoint = publishEndpoint;
-        }
+		public AuthController(IdentityContext context, IConfiguration configuration, IPublishEndpoint publishEndpoint)
+		{
+			_context = context;
+			_configuration = configuration;
+			_publishEndpoint = publishEndpoint;
+		}
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] UserRegisterDto registerDto)
-        {
-            var userExists = await _context.Users.AnyAsync(u => u.Username == registerDto.Username || u.Email == registerDto.Email);
-            if (userExists)
-            {
-                return BadRequest("Kullanıcı adı veya e-posta zaten mevcut.");
-            }
+		[HttpPost("register")]
+		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<UserDto>>), StatusCodes.Status201Created)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status409Conflict)]
+		public async Task<IActionResult> Register([FromBody] UserRegisterDto registerDto)
+		{
+			var userExists = await _context.Users.AnyAsync(u => u.Username == registerDto.Username || u.Email == registerDto.Email);
+			if (userExists)
+			{
+				var error = new ApiError { Status = "409", Title = "Kullanıcı Mevcut", Detail = "Kullanıcı adı veya e-posta zaten mevcut." };
+				var errorResponse = StandardApiResponse<object>.Fail(new List<ApiError> { error });
+				return new ObjectResult(errorResponse) { StatusCode = 409 };
+			}
 
-            string passwordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
+			string passwordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
 
-            var user = new User
-            {
-                Username = registerDto.Username,
-                Email = registerDto.Email,
-                PasswordHash = passwordHash,
-                CreatedAt = DateTime.UtcNow
-            };
+			var user = new User
+			{
+				Username = registerDto.Username,
+				Email = registerDto.Email,
+				PasswordHash = passwordHash,
+				CreatedAt = DateTime.UtcNow
+			};
 
-            var role = _context.Roles.FirstOrDefault(r => r.Name == "User");
+			var role = _context.Roles.FirstOrDefault(r => r.Name == "User");
 
-            user.UserRoles = new List<UserRole>
-                {
-                    new UserRole { RoleId = role.RoleId }
-                };
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
+			user.UserRoles = new List<UserRole>
+				{
+					new UserRole { RoleId = role.RoleId }
+				};
+			await _context.Users.AddAsync(user);
+			await _context.SaveChangesAsync();
 
-            await _publishEndpoint.Publish(new UserCreated(user.UserId, user.Username));
+			var newUserDto = new UserDto
+			{
+				UserId = user.UserId,
+				Email = user.Email,
+				Username = user.Username,
+				CreatedAt = user.CreatedAt
+			};
 
-            return Ok(new { Message = "Kullanıcı başarıyla oluşturuldu." });
-        }
+			var resource = new JsonApiResource<UserDto>
+			{
+				Type = "users",
+				Id = user.UserId.ToString(),
+				Attributes = newUserDto
+			};
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)
-        {
-            var user = await _context.Users.Select(x => new User
-            {
-                UserId = x.UserId,
-                Username = x.Username,
-                Email = x.Email,
-                PasswordHash = x.PasswordHash,
-                UserRoles = x.UserRoles.Select(y => new UserRole { Role = new Role { Name = y.Role.Name} }).ToList()
-            }).FirstOrDefaultAsync(u => u.Username == loginDto.Username);
-            if (user == null)
-            {
-                return Unauthorized("Geçersiz kullanıcı adı veya şifre."); // Güvenlik için hangi bilginin yanlış olduğunu söyleme
-            }
+			var meta = new Dictionary<string, object> { { "message", "Kullanıcı başarıyla oluşturuldu." } };
 
-            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash);
-            if (!isPasswordValid)
-            {
-                return Unauthorized("Geçersiz kullanıcı adı veya şifre.");
-            }
+			var successResponse = StandardApiResponse<JsonApiResource<UserDto>>.Success(resource, meta: meta);
 
-            var token = GenerateJwtToken(user);
+			await _publishEndpoint.Publish(new UserCreated(user.UserId, user.Username));
 
-            return Ok(new { token });
-        }
-
-        private string GenerateJwtToken(User user)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-
-            var rawKey = Convert.FromBase64String(_configuration["Jwt:Key"]);
-            var signingKey = new SymmetricSecurityKey(rawKey);
+			return CreatedAtAction(nameof(Register), new { id = user.UserId }, successResponse);
 
 
-            var claims = new List<Claim>
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-                new Claim(JwtRegisteredClaimNames.Name, user.Username),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            };
+		}
 
-            foreach (var role in user.UserRoles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role.Role.Name));
-            }
+		[HttpPost("login")]
+		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<TokenDto>>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status401Unauthorized)]
+		public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)
+		{
+			var user = await _context.Users.Select(x => new User
+			{
+				UserId = x.UserId,
+				Username = x.Username,
+				Email = x.Email,
+				PasswordHash = x.PasswordHash,
+				UserRoles = x.UserRoles.Select(y => new UserRole { Role = new Role { Name = y.Role.Name } }).ToList()
+			}).FirstOrDefaultAsync(u => u.Username == loginDto.Username);
 
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(3),
-                Issuer = _configuration["Jwt:Issuer"],
-                Audience = _configuration["Jwt:Audience"],
-                SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256Signature)
-            };
+			if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+			{
+				var error = new ApiError { Status = "401", Title = "Kullanıcı Bilgileri Hatası", Detail = "Geçersiz kullanıcı adı veya şifre." };
+				var apiResponse = StandardApiResponse<object>.Fail(new List<ApiError> { error });
 
-            var securityToken = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(securityToken);
-        }
-    }
+				return Unauthorized(apiResponse);
+			}
+
+			var token = GenerateJwtToken(user);
+
+			var tokenDto = new TokenDto { Token = token };
+
+			var resource = new JsonApiResource<TokenDto> { Type = "authenticationToken", Id = Guid.NewGuid().ToString(), Attributes = tokenDto };
+
+			var meta = new Dictionary<string, object> { { "message", "Başarıyla Giriş Yapıldı" } };
+
+			var response = StandardApiResponse<JsonApiResource<TokenDto>>.Success(resource, meta: meta);
+
+
+			return Ok(response);
+		}
+
+		private string GenerateJwtToken(User user)
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+
+			var rawKey = Convert.FromBase64String(_configuration["Jwt:Key"]);
+			var signingKey = new SymmetricSecurityKey(rawKey);
+
+
+			var claims = new List<Claim>
+			{
+				new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+				new Claim(JwtRegisteredClaimNames.Name, user.Username),
+				new Claim(JwtRegisteredClaimNames.Email, user.Email),
+				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+			};
+
+			foreach (var role in user.UserRoles)
+			{
+				claims.Add(new Claim(ClaimTypes.Role, role.Role.Name));
+			}
+
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Subject = new ClaimsIdentity(claims),
+				Expires = DateTime.UtcNow.AddHours(3),
+				Issuer = _configuration["Jwt:Issuer"],
+				Audience = _configuration["Jwt:Audience"],
+				SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256Signature)
+			};
+
+			var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+			return tokenHandler.WriteToken(securityToken);
+		}
+	}
 }
