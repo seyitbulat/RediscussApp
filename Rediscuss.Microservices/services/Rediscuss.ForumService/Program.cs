@@ -4,8 +4,11 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Rediscuss.ForumService.Consumers;
 using Rediscuss.ForumService.Data;
+using Rediscuss.Shared.Contracts;
+using Rediscuss.Shared.Contracts.Middlewares;
 using StackExchange.Redis;
 using System.Security.Claims;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,7 +53,34 @@ builder.Services.AddAuthentication(options =>
 			IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(builder.Configuration["Jwt:Key"])),
 			RoleClaimType = ClaimTypes.Role
 		};
+
+		options.Events = new JwtBearerEvents
+		{
+			OnChallenge = async context =>
+			{
+				context.HandleResponse();
+				context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+				context.Response.ContentType = "application/json";
+
+				var error = new ApiError { Status = "401", Title = "Unauthorized", Detail = "Bu iþlemi yapmak için giriþ yapmanýz gerekmektedir." };
+				var response = StandardApiResponse<object>.Fail(new List<ApiError> { error });
+
+				await context.Response.WriteAsJsonAsync(response);
+			},
+
+			OnForbidden = async context =>
+			{
+				context.Response.StatusCode = StatusCodes.Status403Forbidden;
+				context.Response.ContentType = "application/json";
+
+				var error = new ApiError { Status = "403", Title = "Forbidden", Detail = "Bu iþlemi gerçekleþtirmek için gerekli yetkiye sahip deðilsiniz." };
+				var response = StandardApiResponse<object>.Fail(new List<ApiError> { error });
+
+				await context.Response.WriteAsJsonAsync(response);
+			}
+		};
 	});
+
 
 builder.Services.AddAuthorization();
 
@@ -94,6 +124,8 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 
 var app = builder.Build();
+
+app.UseMiddleware<GlobalErrorHandling>();
 
 
 using (var scope = app.Services.CreateScope())

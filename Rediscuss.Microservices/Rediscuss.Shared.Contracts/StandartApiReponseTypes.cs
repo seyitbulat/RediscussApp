@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Rediscuss.Shared.Contracts
 {
-	public class StandartApiResponse<T>
+	public class StandardApiResponse<T>
 	{
 		[JsonPropertyName("name")]
 		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -15,21 +15,21 @@ namespace Rediscuss.Shared.Contracts
 
 		[JsonPropertyName("errors")]
 		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-		public List<ApiError> Errors { get; set; }
+		public List<ApiError>? Errors { get; set; }
 
 		[JsonPropertyName("links")]
 		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public Dictionary<string, string> Links { get; set; }
+        public Dictionary<string, string>? Links { get; set; }
 
 
 		[JsonPropertyName("meta")]
 		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-		public Dictionary<string, object> Meta { get; set; }
+		public Dictionary<string, object>? Meta { get; set; }
 
 
-		public static StandartApiResponse<T> Success(T data, Dictionary<string, string> links) => new() { Data = data, Links = links };
+		public static StandardApiResponse<T> Success(T data, Dictionary<string, string>? links = null, Dictionary<string, object>? meta = null) => new() { Data = data, Links = links, Meta = meta };
 
-		public static StandartApiResponse<T> Fail(List<ApiError> errors) => new() { Errors = errors };
+		public static StandardApiResponse<T> Fail(List<ApiError> errors) => new() { Errors = errors };
     }
 
 

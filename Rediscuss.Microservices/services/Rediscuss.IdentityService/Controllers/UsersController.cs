@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Rediscuss.IdentityService.Data;
 using Rediscuss.IdentityService.DTOs;
 using Rediscuss.IdentityService.Entities;
+using Rediscuss.Shared.Contracts;
 using System.Security.Claims;
 
 namespace Rediscuss.IdentityService.Controllers
@@ -22,21 +24,20 @@ namespace Rediscuss.IdentityService.Controllers
 
         [HttpGet("me")]
         [Authorize(Roles = "Admin,User")]
-        public async Task<IActionResult> GetCurrentUser()
+		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<UserDto>>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> GetCurrentUser()
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
-            {
-                return Unauthorized();
-            }
+            var userId = Convert.ToInt32(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
             var user = await _context.Users.FindAsync(userId);
 
             if (user == null)
             {
-                return NotFound("Kullanıcı bulunamadı.");
-            }
+				var error = new ApiError { Status = "404", Title = "Not Found", Detail = "Token'a sahip kullanıcı veritabanında bulunamadı." };
+				var errorResponse = StandardApiResponse<object>.Fail(new List<ApiError> { error });
+				return NotFound(errorResponse);
+			}
 
             var userDto = new UserDto
             {
@@ -46,36 +47,47 @@ namespace Rediscuss.IdentityService.Controllers
                 CreatedAt = user.CreatedAt
             };
 
-            return Ok(userDto);
-        }
+			var resource = new JsonApiResource<UserDto>
+			{
+				Type = "users",
+				Id = user.UserId.ToString(),
+				Attributes = userDto
+			};
+
+			var response = StandardApiResponse<JsonApiResource<UserDto>>.Success(resource);
+			return Ok(response);
+		}
 
 
         [HttpPost("{userId}/roles")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AssignRoleToUser(int userId, [FromBody] string roleName)
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status400BadRequest)]
+		public async Task<IActionResult> AssignRoleToUser(int userId, [FromBody] AssignRoleDto assignRoleDto)
         {
-            var claimUserId = Convert.ToInt32(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+			var user = await _context.Users.FindAsync(userId);
+			if (user == null)
+			{
+				var userError = new ApiError { Status = "404", Title = "Not Found", Detail = $"Kullanıcı ID '{userId}' bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { userError }));
+			}
 
-            var user = await _context.Users.FindAsync(userId);
+			var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == assignRoleDto.RoleName);
+			if (role == null)
+			{
+				var roleError = new ApiError { Status = "400", Title = "Bad Request", Detail = $"Rol '{assignRoleDto.RoleName}' bulunamadı." };
+				return BadRequest(StandardApiResponse<object>.Fail(new List<ApiError> { roleError }));
+			}
 
-            if (user == null)
-            {
-                return BadRequest("Kullanıcı Bulunamadı");
-            }
+			var userRole = new UserRole { UserId = userId, RoleId = role.RoleId };
+			_context.UserRoles.Add(userRole);
+			await _context.SaveChangesAsync();
 
-            var role = _context.Roles.FirstOrDefault(r => r.Name == roleName);
+			var meta = new Dictionary<string, object> { { "message", $"'{role.Name}' rolü, '{user.Username}' kullanıcısına başarıyla atandı." } };
+			var successResponse = StandardApiResponse<object>.Success(null, meta: meta);
 
-            if (role == null)
-            {
-                return BadRequest("Rol Bulunamadı");
-            }
-
-            var userRole = new UserRole { UserId = userId, RoleId = role.RoleId, CreatedBy = claimUserId, IsDeleted = false };
-
-            _context.Add(userRole);
-            await _context.SaveChangesAsync();
-
-            return Ok("Rol kullanıcıya başarıyla atandı.");
-        }
+			return Ok(successResponse);
+		}
     }
 }
