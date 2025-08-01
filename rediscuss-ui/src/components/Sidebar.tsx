@@ -12,18 +12,16 @@ export default async function Sidebar() {
             <div className="">
                 <ul role="menu">
                     <li role="none">
-                        {/* <button
-                            type="button"
-                            role="menuitem"
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm
-                   hover:bg-secondary-50 focus:bg-secondary-100 outline-none"
-                        >
-                            <HomeIcon className="w-5 h-5 flex-shrink-0" aria-hidden />
-                            <span className="flex-1 text-left truncate">Ana Sayfa</span>
-                        </button> */}
-
                         <Link href={'/'}>
-                            Ana Sayfa
+                            <button
+                                type="button"
+                                role="menuitem"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm
+                   hover:bg-secondary-50 focus:bg-secondary-100 outline-none"
+                            >
+                                <HomeIcon className="w-5 h-5 flex-shrink-0" aria-hidden />
+                                <span className="flex-1 text-left truncate">Ana Sayfa</span>
+                            </button>
                         </Link>
                     </li>
 
