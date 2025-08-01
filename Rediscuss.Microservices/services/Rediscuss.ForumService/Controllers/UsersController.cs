@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Rediscuss.ForumService.Data;
@@ -9,155 +10,168 @@ using System.Security.Claims;
 
 namespace Rediscuss.ForumService.Controllers
 {
-    [Route("ForumApi/[controller]")]
-    [ApiController]
-    public class UsersController : CustomBaseController
-    {
-        private readonly ForumContext _context;
+	[Route("ForumApi/[controller]")]
+	[ApiController]
+	public class UsersController : ControllerBase
+	{
+		private readonly ForumContext _context;
 
-        public UsersController(ForumContext context)
-        {
-            _context = context;
-        }
+		public UsersController(ForumContext context)
+		{
+			_context = context;
+		}
 
+		[HttpPost("{userId}/roles")]
+		[Authorize(Roles = "Admin")]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status409Conflict)]
+		public async Task<IActionResult> AssignRoleToUser(int userId, [FromBody] AssignRoleDto assignRoleDto)
+		{
+			var userExists = await _context.FormUsers.Find(u => u.Id == userId).AnyAsync();
+			if (!userExists)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = $"{userId} ID'li kullanıcı bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
-        [HttpPost("{userId}/roles)")]
-        public async Task<IActionResult> AssignRoleToUser(int userId, string roleName)
-        {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var role = await _context.Roles.Find(r => r.RoleName == assignRoleDto.RoleName).FirstOrDefaultAsync();
+			if (role == null)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = $"'{assignRoleDto.RoleName}' adında bir rol bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
-            if(!int.TryParse(userIdString, out userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204)); }
+			var userAlreadyHasRole = await _context.UserRoles.Find(u => u.UserId == userId && u.RoleId == role.Id && u.IsDeleted == false).AnyAsync();
+			if (userAlreadyHasRole)
+			{
+				var error = new ApiError { Status = "409", Title = "Çakışma", Detail = "Kullanıcı zaten bu role sahip." };
+				return Conflict(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
+			var assigningUserId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			var userRole = new UserRole { UserId = userId, RoleId = role.Id, CreatedBy = assigningUserId };
+			await _context.UserRoles.InsertOneAsync(userRole);
 
+			var meta = new Dictionary<string, object> { { "message", $"'{role.RoleName}' rolü, {userId} ID'li kullanıcıya başarıyla atandı." } };
+			return Ok(StandardApiResponse<object>.Success(null, meta: meta));
+		}
 
-            var role = _context.Roles.Find(s => s.RoleName == roleName).FirstOrDefault();
-            
-            if(role == null) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz Role ID", 204)); }
+		[HttpGet("{targetUserId}/roles")]
+		[Authorize(Roles = "Admin,User")]
+		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<RoleDto>>>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> GetUserRoles(int targetUserId)
+		{
+			var userExists = await _context.FormUsers.Find(u => u.Id == targetUserId).AnyAsync();
+			if (!userExists)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = $"{targetUserId} ID'li kullanıcı bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
-            var isExituserRole = _context.UserRoles.Find(u => u.UserId == userId && u.RoleId == role.Id && u.IsDeleted == false).Any();
+			var userRoles = await _context.UserRoles.Find(u => u.UserId == targetUserId && u.IsDeleted == false).ToListAsync();
+			var roleIds = userRoles.Select(ur => ur.RoleId).ToList();
 
-            if(isExituserRole) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bu Role Sahip", 204)); ; }
+			if (!roleIds.Any())
+			{
+				return Ok(StandardApiResponse<List<JsonApiResource<RoleDto>>>.Success(new List<JsonApiResource<RoleDto>>()));
+			}
 
-            var userRole = new UserRole
-            {
-                UserId = userId,
-                RoleId = role.Id,
-                IsDeleted = false,
-                CreatedBy = userId
-            };
+			var roles = await _context.Roles.Find(r => roleIds.Contains(r.Id) && r.IsDeleted == false).ToListAsync();
+			var resources = roles.Select(r => new JsonApiResource<RoleDto>
+			{
+				Type = "roles",
+				Id = r.Id.ToString(),
+				Attributes = new RoleDto
+				{
+					Id = r.Id,
+					RoleName = r.RoleName,
+					Scope = r.Scope,
+					Description = r.Description,
+					Permissions = r.Permissions.Select(p => new PermissionDto { Id = p.Id, ActionName = p.ActionName, Description = p.Description }).ToList(),
+					CreatedBy = r.CreatedBy
+				}
+			}).ToList();
 
-            await _context.UserRoles.InsertOneAsync(userRole);
+			return Ok(StandardApiResponse<List<JsonApiResource<RoleDto>>>.Success(resources));
+		}
 
-            return CreateActionResult(ApiResponse<NoDataDto>.Success(201));
+		[HttpDelete("{targetUserId}/roles/{roleName}")]
+		[Authorize(Roles = "Admin")]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> DeleteUserRole(int targetUserId, string roleName)
+		{
+			var userExists = await _context.FormUsers.Find(u => u.Id == targetUserId).AnyAsync();
+			if (!userExists)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = $"{targetUserId} ID'li kullanıcı bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
-        }
+			var role = await _context.Roles.Find(r => r.RoleName == roleName).FirstOrDefaultAsync();
+			if (role == null)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = $"'{roleName}' adında bir rol bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
+			var userRoleFilter = Builders<UserRole>.Filter.And(
+				Builders<UserRole>.Filter.Eq(u => u.UserId, targetUserId),
+				Builders<UserRole>.Filter.Eq(u => u.RoleId, role.Id),
+				Builders<UserRole>.Filter.Eq(u => u.IsDeleted, false)
+			);
 
-        [HttpGet("{targetUserId}/roles")]
-        public async Task<IActionResult> GetUserRoles(int targetUserId)
-        {
-            int userId;
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var userRole = await _context.UserRoles.Find(userRoleFilter).FirstOrDefaultAsync();
+			if (userRole == null)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Kullanıcı bu role sahip değil." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
-            if (!int.TryParse(userIdString, out userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204)); }
+			var assigningUserId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			var update = Builders<UserRole>.Update
+				.Set(u => u.IsDeleted, true)
+				.Set(u => u.DeletedAt, DateTime.UtcNow)
+				.Set(u => u.DeletedBy, assigningUserId);
 
-            var userRoles = await _context.UserRoles.Find(u => u.UserId == targetUserId && u.IsDeleted == false).ToListAsync();
+			await _context.UserRoles.UpdateOneAsync(userRoleFilter, update);
 
-            var isUserExists = await _context.FormUsers.Find(u => u.Id == targetUserId).AnyAsync();
+			var meta = new Dictionary<string, object> { { "message", $"'{role.RoleName}' rolü, {targetUserId} ID'li kullanıcıdan başarıyla kaldırıldı." } };
+			return Ok(StandardApiResponse<object>.Success(null, meta: meta));
+		}
 
-            if (!isUserExists) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz User ID", 204)); }
+		[HttpGet("me/subscriptions")]
+		[Authorize(Roles = "Admin,User")]
+		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<SubredisDto>>>), StatusCodes.Status200OK)]
+		public async Task<IActionResult> GetMySubscriptions()
+		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			var subscriptions = await _context.Subscriptions.Find(s => s.IsDeleted == false && s.UserId == userId).ToListAsync();
 
-            var roleIds = userRoles.Select(u => u.RoleId).ToList();
+			if (!subscriptions.Any())
+			{
+				return Ok(StandardApiResponse<List<JsonApiResource<SubredisDto>>>.Success(new List<JsonApiResource<SubredisDto>>()));
+			}
 
-            if (roleIds.Count == 0) { return Ok(new List<RoleDto> ()); }
+			var subredisIds = subscriptions.Select(s => s.SubredisId);
+			var subredises = await _context.Subredises.Find(s => subredisIds.Contains(s.Id) && s.IsDeleted == false).ToListAsync();
+			var resources = subredises.Select(s => new JsonApiResource<SubredisDto>
+			{
+				Type = "subredises",
+				Id = s.Id.ToString(),
+				Attributes = new SubredisDto
+				{
+					Id = s.Id,
+					Name = s.Name,
+					Description = s.Description,
+					CreatedBy = s.CreatedBy,
+					CreatedAt = s.CreatedAt
+				}
+			}).ToList();
 
-            var filter = Builders<Role>.Filter.In(r => r.Id, roleIds) & Builders<Role>.Filter.Eq(s => s.IsDeleted, false);
-
-            var roles = await _context.Roles.Find(filter).ToListAsync();
-
-            var roleDtos = roles.Select(r => new RoleDto { 
-                Id = r.Id,
-                RoleName = r.RoleName,
-                Scope = r.Scope,
-                Description = r.Description,
-                Permissions = r.Permissions.Select(p => new PermissionDto { Id = p.Id, ActionName = p.ActionName, Description = p.Description}).ToList(),
-                CreatedBy = userId
-            });
-
-
-            return CreateActionResult(ApiResponse<IEnumerable<RoleDto>>.Success(200));
-        }
-
-
-        [HttpDelete("{targetUserId}/roles/{roleName}")]
-        public async Task<IActionResult> DeleteUserRole(int targetUserId, string roleName)
-        {
-            int userId;
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(userIdString, out userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204)); }
-
-            var role = _context.Roles.Find(r => r.RoleName == roleName).FirstOrDefault();
-
-            if(role == null) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçeresiz Role ID", 204)); }
-
-            var isUserExists = await _context.FormUsers.Find(u => u.Id == targetUserId).AnyAsync();
-
-            if (!isUserExists) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz User ID", 204)); }
-
-            var userRoleFilter = Builders<UserRole>.Filter.And(
-                    Builders<UserRole>.Filter.Eq(u => u.UserId, targetUserId),
-                    Builders<UserRole>.Filter.Eq(u => u.RoleId, role.Id),
-                    Builders<UserRole>.Filter.Eq(u => u.IsDeleted, false)
-                );
-
-            var userRole = _context.UserRoles.Find(userRoleFilter).FirstOrDefault();
-
-            if(userRole == null) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bu Role Sahip Değil", 204)); }    
-
-            var update = Builders<UserRole>.Update
-                .Set(u => u.IsDeleted, true)
-                .Set(u => u.DeletedAt, DateTime.UtcNow)
-                .Set(u => u.DeletedBy, userId);
-
-
-            await _context.UserRoles.UpdateOneAsync(userRoleFilter, update);
-            return CreateActionResult(ApiResponse<IEnumerable<RoleDto>>.Success(200));
-
-        }
-
-
-        [HttpGet("me/subscriptions")]
-        public async Task<IActionResult> GetMySubscriptions()
-        {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if(!int.TryParse(userIdString, out var userId)) { return Unauthorized(); }
-
-            var subscriptions = await _context.Subscriptions.Find(s => s.IsDeleted == false && s.UserId == userId).ToListAsync();
-
-            if (!subscriptions.Any())
-            {
-                return Ok(new List<SubredisDto> ());
-            }
-
-            var subscribedSubredisIds = subscriptions.Select(s => s.SubredisId).ToList();
-
-
-            var filter = Builders<Subredis>.Filter.In(s => s.Id, subscribedSubredisIds) & Builders<Subredis>.Filter.Eq(s => s.IsDeleted, false);
-
-            var subredises = await _context.Subredises.Find(filter).ToListAsync();
-
-            var subredisDtos = subredises.Select(s => new SubredisDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description,
-                CreatedBy = s.CreatedBy,
-                CreatedAt = s.CreatedAt
-            }).ToList();
-
-            return CreateActionResult(ApiResponse<IEnumerable<SubredisDto>>.Success(subredisDtos,200));
-        }
-    }
+			return Ok(StandardApiResponse<List<JsonApiResource<SubredisDto>>>.Success(resources));
+		}
+	}
 }

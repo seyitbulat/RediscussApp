@@ -24,67 +24,79 @@ namespace Rediscuss.ForumService.Controllers
             _redisDb = redis.GetDatabase();
         }
 
-        [HttpPost]
-        [Authorize(Roles = "User")]
-        public async Task<IActionResult> CreateSubredis(CreateSubredisDto dto)
-        {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out int userId))
-            {
-                return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204));
-            }
+		[HttpPost]
+		[Authorize(Roles = "User")]
+		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<SubredisDto>>), StatusCodes.Status201Created)]
+		public async Task<IActionResult> CreateSubredis([FromBody] CreateSubredisDto dto)
+		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var subredis = new Subredis
-            {
-                Name = dto.Name,
-                Description = dto.Description,
-                CreatedBy = userId
-            };
+			var subredis = new Subredis
+			{
+				Name = dto.Name,
+				Description = dto.Description,
+				CreatedBy = userId
+			};
+			await _context.Subredises.InsertOneAsync(subredis);
 
-            await _context.Subredises.InsertOneAsync(subredis);
+			var subscription = new Subscription
+			{
+				UserId = userId,
+				SubredisId = subredis.Id
+			};
+			await _context.Subscriptions.InsertOneAsync(subscription);
 
-            var subscription = new Subscription
-            {
-                UserId = userId,
-                SubredisId = subredis.Id 
-            };
+			var subredisDto = new SubredisDto
+			{
+				Id = subredis.Id,
+				Name = subredis.Name,
+				Description = subredis.Description,
+				CreatedAt = subredis.CreatedAt,
+				CreatedBy = subredis.CreatedBy
+			};
 
-            await _context.Subscriptions.InsertOneAsync(subscription);
+			var resource = new JsonApiResource<SubredisDto>
+			{
+				Type = "subredises",
+				Id = subredis.Id,
+				Attributes = subredisDto
+			};
 
-            var subredisDto = new SubredisDto
-            {
-                Name = subredis.Name,
-                Description = subredis.Description,
-                CreatedAt = subredis.CreatedAt,
-                CreatedBy = subredis.CreatedBy,
-                Id = subredis.Id
-            };
+			var meta = new Dictionary<string, object> { { "message", "Subredis başarıyla oluşturuldu ve abone olundu." } };
+			var response = StandardApiResponse<JsonApiResource<SubredisDto>>.Success(resource, meta: meta);
 
-            return CreateActionResult(ApiResponse<SubredisDto>.Success(subredisDto, 201));
-        }
+			// Henüz bir GetById metodu olmadığı için CreatedAtAction yerine 201 Created dönüyoruz.
+			return StatusCode(StatusCodes.Status201Created, response);
+		}
 
+		[HttpPost("{subredisId}/follow")]
+		[Authorize(Roles = "User")]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status409Conflict)]
+		public async Task<IActionResult> FollowSubredis(string subredisId)
+		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-        [HttpPost("{subredisId}/follow")]
-        [Authorize(Roles = "User")]
-        public async Task<IActionResult> FollowSubredis(string subredisId)
-        {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var subredisExists = await _context.Subredises.Find(s => s.Id == subredisId && s.IsDeleted == false).AnyAsync();
+			if (subredisExists == false)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Takip edilmek istenen Subredis bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
-            if(!int.TryParse(userIdString, out int userId)) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Kullanıcı Bulunamadı", 204)); }
+			var existingSubscription = await _context.Subscriptions.Find(s => s.SubredisId == subredisId && s.UserId == userId && s.IsDeleted == false).AnyAsync();
+			if (existingSubscription)
+			{
+				var error = new ApiError { Status = "409", Title = "Çakışma", Detail = "Bu Subredis zaten takip ediliyor." };
+				return Conflict(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
-            var subredis = _context.Subredises.Find(s => s.Id == subredisId  && s.IsDeleted == false);
+			await _context.Subscriptions.InsertOneAsync(new Subscription { SubredisId = subredisId, UserId = userId });
 
-            if(subredis == null) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Geçersiz Subredis ID", 204)); }
+			var meta = new Dictionary<string, object> { { "message", "Subredis başarıyla takip edildi." } };
+			return Ok(StandardApiResponse<object>.Success(null, meta: meta));
+		}
 
-
-            var existingSubscription = _context.Subscriptions.Find(s => s.SubredisId == subredisId && s.UserId == userId && s.IsDeleted == false).FirstOrDefault();
-
-            if(existingSubscription != null) { return CreateActionResult(ApiResponse<NoDataDto>.Fail("Bu subredis zaten takip ediliyor", 204)); }
-
-            await _context.Subscriptions.InsertOneAsync(new Subscription { SubredisId = subredisId, IsDeleted = false, UserId = userId});
-
-            return CreateActionResult(ApiResponse<NoDataDto>.Fail("Subredis Takip Edildi", 200));
-        }
-
-    }
+	}
 }

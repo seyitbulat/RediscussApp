@@ -1,4 +1,6 @@
-﻿namespace Rediscuss.ForumService.DTOs
+﻿using Rediscuss.ForumService.Entities;
+
+namespace Rediscuss.ForumService.DTOs
 {
     public class PostDto
     {
@@ -27,5 +29,23 @@
 
 
         public string SubredisName { get; set; }
-    }
+
+
+		public PostDto(Post post, int upVotes, int downVotes, string createdByUserName, string subredisName)
+		{
+			Id = post.Id;
+			Title = post.Title;
+			Content = post.Content;
+			SubredisId = post.SubredisId;
+			CreatedAt = post.CreatedAt;
+			CreatedBy = post.CreatedBy;
+			UpdatedAt = post.UpdatedAt;
+			UpdatedBy = post.UpdatedBy;
+			UpVotes = upVotes;
+			DownVotes = downVotes;
+			CreatedByUserName = createdByUserName;
+			SubredisName = subredisName;
+		}
+
+	}
 }

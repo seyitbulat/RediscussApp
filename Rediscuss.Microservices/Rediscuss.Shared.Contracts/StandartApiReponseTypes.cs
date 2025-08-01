@@ -9,7 +9,7 @@ namespace Rediscuss.Shared.Contracts
 {
 	public class StandardApiResponse<T>
 	{
-		[JsonPropertyName("name")]
+		[JsonPropertyName("data")]
 		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public T Data { get; set; }
 
