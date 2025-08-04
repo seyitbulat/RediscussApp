@@ -27,9 +27,18 @@ namespace Rediscuss.ForumService.Controllers
 		[HttpPost]
 		[Authorize(Roles = "User")]
 		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<SubredisDto>>), StatusCodes.Status201Created)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status400BadRequest)]
 		public async Task<IActionResult> CreateSubredis([FromBody] CreateSubredisDto dto)
 		{
 			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+			var isSubredisExits = await _context.Subredises.Find(s => s.Name == dto.Name).AnyAsync();
+
+			if(isSubredisExits)
+			{
+				var error = new ApiError { Status = "400", Title = "Çakışma", Detail = $"Bu {dto.Name} isimmli subredis zaten mevcut." };
+				return BadRequest(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
 
 			var subredis = new Subredis
 			{
@@ -65,7 +74,6 @@ namespace Rediscuss.ForumService.Controllers
 			var meta = new Dictionary<string, object> { { "message", "Subredis başarıyla oluşturuldu ve abone olundu." } };
 			var response = StandardApiResponse<JsonApiResource<SubredisDto>>.Success(resource, meta: meta);
 
-			// Henüz bir GetById metodu olmadığı için CreatedAtAction yerine 201 Created dönüyoruz.
 			return StatusCode(StatusCodes.Status201Created, response);
 		}
 
@@ -96,6 +104,38 @@ namespace Rediscuss.ForumService.Controllers
 
 			var meta = new Dictionary<string, object> { { "message", "Subredis başarıyla takip edildi." } };
 			return Ok(StandardApiResponse<object>.Success(null, meta: meta));
+		}
+
+		[HttpGet("GetByName/{subredisName}")]
+		[Authorize(Roles = "User")]
+		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<SubredisDto>>), StatusCodes.Status200OK)]
+		public async Task<IActionResult> GetByName(string subredisName)
+		{
+			var subredisExists = await _context.Subredises.Find(s => s.Name == subredisName && s.IsDeleted == false).AnyAsync();
+			if (subredisExists == false)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = $"'{subredisName}' Subredisi Bulunamadı" };
+				return NotFound(StandardApiResponse<Object>.Fail(new List<ApiError> { error }));
+			}
+
+			var subredis = await _context.Subredises.Find(s => s.IsDeleted == false && s.Name == subredisName).FirstOrDefaultAsync();
+
+			var user = _context.FormUsers.Find(u => u.Id == subredis.CreatedBy).FirstOrDefault();
+			var subredisDto = new SubredisDto
+			{
+				Name = subredis.Name,
+				Id = subredis.Id,
+				CreatedAt = subredis.CreatedAt,
+				CreatedBy = subredis.CreatedBy,
+				Description = subredis.Description,
+				CreatedByUsername = user != null ? user.Username : "Bilinmiyor"
+			};
+
+			var resource = new JsonApiResource<SubredisDto> { Id = subredis.Id.ToString(), Type = "subredises", Attributes = subredisDto };
+
+			var response = StandardApiResponse<JsonApiResource<SubredisDto>>.Success(resource);
+
+			return Ok(response);
 		}
 
 	}
