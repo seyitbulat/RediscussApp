@@ -15,6 +15,8 @@ export interface SubredisDto{
     description?: string,
     createdAt?: Date,
     createdBy?: number
+
+    createdByUsername?: string
 }
 
 

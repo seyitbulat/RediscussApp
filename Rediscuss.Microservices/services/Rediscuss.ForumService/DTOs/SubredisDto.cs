@@ -12,5 +12,8 @@
         public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
         public int? CreatedBy { get; set; }
 
+
+        public string CreatedByUsername { get; set; }
+
     }
 }
