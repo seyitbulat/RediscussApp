@@ -16,3 +16,17 @@ export interface SubredisDto{
     createdAt?: Date,
     createdBy?: number
 }
+
+
+export interface PostDto{
+    id: string,
+    title: string,
+    content: string,
+    subredisId: string,
+    upVotes: number,
+    downVotes: number,
+    createdBy: number,
+    createdAd: Date,
+    createByUserName: string,
+    subredisName: string
+}

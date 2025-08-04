@@ -1,4 +1,4 @@
-import 'server-only';   
+import 'server-only';
 import { JsonApiResource, StandardApiResponse } from '@/types/api';
 import { UserDto } from '@/types/dto';
 import { cookies } from 'next/headers';
@@ -14,7 +14,7 @@ export async function getAuthenticatedUser(): Promise<UserDto | null> {
             cache: 'no-store'
         });
 
-          if (!response.ok) {
+        if (!response.ok) {
             return null;
         }
 
@@ -22,7 +22,7 @@ export async function getAuthenticatedUser(): Promise<UserDto | null> {
 
         const user = data.data?.attributes;
 
-        if(!user){
+        if (!user) {
             return null;
         }
 
