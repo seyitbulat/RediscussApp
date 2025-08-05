@@ -14,18 +14,18 @@ using System.Threading.Tasks;
 
 namespace Rediscuss.ForumService.Controllers
 {
-    [Route("ForumApi/[controller]")]
-    [ApiController]
-    public class PostsController : CustomBaseController
-    {
-        private readonly ForumContext _context;
-        private readonly IDatabase _redisDb;
+	[Route("ForumApi/[controller]")]
+	[ApiController]
+	public class PostsController : CustomBaseController
+	{
+		private readonly ForumContext _context;
+		private readonly IDatabase _redisDb;
 
-        public PostsController(ForumContext context, IConnectionMultiplexer redis)
-        {
-            _context = context;
-            _redisDb = redis.GetDatabase();
-        }
+		public PostsController(ForumContext context, IConnectionMultiplexer redis)
+		{
+			_context = context;
+			_redisDb = redis.GetDatabase();
+		}
 
 		[HttpPost]
 		[Authorize(Roles = "User")]
@@ -50,7 +50,7 @@ namespace Rediscuss.ForumService.Controllers
 			};
 			await _context.Posts.InsertOneAsync(post);
 
-			var postDto = new PostDto(post, 0, 0, User.Identity.Name, ""); 
+			var postDto = new PostDto(post, 0, 0, User.Identity.Name, "");
 			var resource = new JsonApiResource<PostDto>
 			{
 				Type = "posts",
@@ -110,8 +110,60 @@ namespace Rediscuss.ForumService.Controllers
 				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
 			}
 
-			var postsWithDetails = await GetPostsWithDetails(Builders<Post>.Filter.Eq(p => p.SubredisId, subredisId), page, pageSize);
-			return Ok(StandardApiResponse<List<JsonApiResource<PostDto>>>.Success(postsWithDetails));
+			var filter = Builders<Post>.Filter.Eq(s => s.SubredisId, subredisId) & Builders<Post>.Filter.Eq(s => s.IsDeleted, false);
+			var baseQuery = _context.Posts.Aggregate()
+				.Match(filter)
+				.SortByDescending(p => p.CreatedAt)
+				.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
+				.Lookup<PostWithDetails, Subredis, PostWithDetails>(_context.Subredises, p => p.SubredisId, s => s.Id, r => r.Subredises);
+
+			var countResult = await baseQuery.Count().FirstOrDefaultAsync();
+			long totalCount = countResult?.Count ?? 0;
+			int totalPages = totalCount > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 0;
+
+			var items = await baseQuery
+					   .Skip((page - 1) * pageSize)
+					   .Limit(pageSize)
+					   .ToListAsync();
+
+			var tasks = items.Select(async p =>
+			{
+				var voteKey = $"post:votes:{p.Id}";
+				var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
+				var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
+				await Task.WhenAll(upvotesTask, downvotesTask);
+
+				var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Subredises.FirstOrDefault()?.Name);
+				return new JsonApiResource<PostDto> { Type = "posts", Id = p.Id, Attributes = dto };
+			});
+			var data = (await Task.WhenAll(tasks)).ToList();
+
+			var meta = new Dictionary<string, object>
+			{
+				{ "totalCount", totalCount },
+				{ "totalPages", totalPages }
+			};
+
+			var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}";
+			var links = new Dictionary<string, string>
+			{
+				{"Self", $"{baseUrl}?page={page}&pageSize={pageSize}"},
+				{"First", $"{baseUrl}?page=1&pageSize={pageSize}"},
+				{"Last", totalPages > 0 ? $"{baseUrl}?page={totalPages}&pageSize={pageSize}" : null}
+			};
+
+			if (page > 1 && page <= totalPages)
+			{
+				links.Add("Prev", $"{baseUrl}?page={page - 1}&pageSize={pageSize}");
+			}
+
+			if (page < totalPages)
+			{
+				links.Add("Next", $"{baseUrl}?page={page + 1}&pageSize={pageSize}");
+
+			}
+
+			return Ok(StandardApiResponse<List<JsonApiResource<PostDto>>>.Success(data, meta: meta, links: links));
 		}
 
 		[HttpGet("feed")]
