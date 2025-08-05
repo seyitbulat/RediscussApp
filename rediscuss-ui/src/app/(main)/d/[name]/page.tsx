@@ -1,7 +1,7 @@
+import Post from "@/components/Post";
 import { getSubredisByName, getSubredisPosts } from "@/lib/subredis"
 import { useMutation } from "@tanstack/react-query";
-import { UserCircle } from "lucide-react";
-
+import { BellIcon, LucideCookie, MinusIcon, Plus, PlusIcon, SubscriptIcon, UserCircle, VoteIcon } from "lucide-react";
 
 
 interface SubredisPageProps {
@@ -17,33 +17,48 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
   const posts = await getSubredisPosts(subredis ? subredis.id : "");
 
 
-  const post = useMutation({
-    mutationFn: getSubredisPosts(subredis ? subredis.id : ""),
-    onSuccess: () => {
-      
-    }
-  });
+
 
   return (
-    <div className="">
-      <div className="justify-center flex grow-1 border border-secondary-200 h-60 rounded-xl ml-12 mr-12 flex-col">
-        <div className="h-30 grow-1 rounded-xl bg-white shadow flex-1/2">
-        </div>
-        <div className="flex-1/2">
-          <h1>
-            d/{subredis?.name}
-          </h1>
+    <div className="z-10">
+      <div className="justify-center flex grow-1 border border-secondary-200 h-30 rounded-xl ml-12 mr-12">
+        <div className="h-30 grow-1 rounded-xl bg-white flex items-center shadow relative">
+          <div className="w-20 h-20 rounded-full m-2 shadow bg-gradient-to-br from-primary to-accent-300"></div>
+          <div>
+            <h1 className="p-2 text-2xl text-primary">
+              r/{subredis?.name}
+            </h1>
+            <span className="p-2">{subredis?.description}</span>
+          </div>
+          <button className="absolute inline-flex gap-2 right-4 border border-secondary-200 rounded-xl min-w-25 h-8 items-center p-2 bg-primary-400 text-secondary-50 shadow-lg ">
+            <BellIcon className="w-5 h-5" />
+            Katıl
+          </button>
         </div>
       </div>
-      <div className="flex justify-center items-center">
-        <div className="flex-2/3">
-          <div className="">
-            left-side
-          </div>
-        </div>
-        <div className="flex-1/3">
-          right-side
-        </div>
+      <div className="m-12 p-2">
+
+        <ul className="divide-secondary-200 divide-y">
+          <li className="first:rounded-t-lg bg-secondary-50/80">
+            <Post />
+          </li>
+          <li className="bg-secondary-50/80">
+            <Post />
+          </li>
+           <li className="bg-secondary-50/80">
+            <Post />
+          </li>
+           <li className="bg-secondary-50/80">
+            <Post />
+          </li>
+           <li className="bg-secondary-50/80">
+            <Post />
+          </li>
+          <li className="bg-secondary-50/80 last:rounded-b-lg">
+            <Post />
+          </li>
+        </ul>
+
       </div>
     </div>
   );
