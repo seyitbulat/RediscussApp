@@ -1,5 +1,6 @@
+import JoinButton from "@/components/JoinButton";
 import Post from "@/components/Post";
-import { getSubredisByName, getSubredisPosts } from "@/lib/subredis"
+import { getSubredisByName } from "@/lib/subredis"
 import { useMutation } from "@tanstack/react-query";
 import { BellIcon, LucideCookie, MinusIcon, Plus, PlusIcon, SubscriptIcon, UserCircle, VoteIcon } from "lucide-react";
 
@@ -14,7 +15,6 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
   const { name } = await params;
 
   const subredis = await getSubredisByName(name);
-  const posts = await getSubredisPosts(subredis ? subredis.id : "");
 
 
 
@@ -30,35 +30,12 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
             </h1>
             <span className="p-2">{subredis?.description}</span>
           </div>
-          <button className="absolute inline-flex gap-2 right-4 border border-secondary-200 rounded-xl min-w-25 h-8 items-center p-2 bg-primary-400 text-secondary-50 shadow-lg ">
-            <BellIcon className="w-5 h-5" />
-            Katıl
-          </button>
+         <JoinButton subredisId={subredis?.id || ""} />
         </div>
       </div>
       <div className="m-12 p-2">
 
-        <ul className="divide-secondary-200 divide-y">
-          <li className="first:rounded-t-lg bg-secondary-50/80">
-            <Post />
-          </li>
-          <li className="bg-secondary-50/80">
-            <Post />
-          </li>
-           <li className="bg-secondary-50/80">
-            <Post />
-          </li>
-           <li className="bg-secondary-50/80">
-            <Post />
-          </li>
-           <li className="bg-secondary-50/80">
-            <Post />
-          </li>
-          <li className="bg-secondary-50/80 last:rounded-b-lg">
-            <Post />
-          </li>
-        </ul>
-
+       
       </div>
     </div>
   );
