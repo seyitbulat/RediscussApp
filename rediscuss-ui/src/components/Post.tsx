@@ -14,7 +14,8 @@ export default function Post({postDto} : PostProps) {
 
 
     return (
-        <div className={`min-h-40 transition-all p-4  ${isMouseEnter ? "" : ""}`} onMouseEnter={() => SetIsMouseEnter(true)} onMouseLeave={() => SetIsMouseEnter(false)}>
+        <div className={`min-h-40 transition-all p-4  ${isMouseEnter ? "" : ""}`} 
+        onMouseEnter={() => SetIsMouseEnter(true)} onMouseLeave={() => SetIsMouseEnter(false)}>
             <div className="flex gap-4 items-center">
                 <div className="">{postDto.createByUserName}</div>
                 <div className="text-xs align-text-bottom">44m ago</div>
