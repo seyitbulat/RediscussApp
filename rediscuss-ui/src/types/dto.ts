@@ -29,6 +29,6 @@ export interface PostDto{
     downVotes: number,
     createdBy: number,
     createdAt: Date,
-    createByUserName: string,
+    createdByUserName: string,
     subredisName: string
 }

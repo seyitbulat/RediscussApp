@@ -3,7 +3,7 @@
 import Response from "@/lib/response";
 import { PostDto } from "@/types/dto";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import Post from "./Post";
 
 interface PostFeedProps {
@@ -41,7 +41,7 @@ export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedP
     isFetchingNextPage,
     status,
   } = useInfiniteQuery({
-    queryKey: ['posts'],
+    queryKey: ['posts', subredisId],
     queryFn: ({ pageParam = 1 }) => fetchPosts({ pageParam, subredisId }),
     initialPageParam: 1,
     getNextPageParam: ({ nextPage, hasPage }) => hasPage ? nextPage : undefined,
@@ -77,59 +77,47 @@ export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedP
   }, [data, initialPosts]);
 
 
-  const [isMouseEnter, setIsMouseEnter] = useState(false);
-
-  const handleMouseEnter = () => {
-    setIsMouseEnter(true);
-  }
-
+  
   return (
     <div>
       <ul className="space-y-2">
         {allPosts.map((post, index) => {
-          if (index == 0) {
+          const isFirst = index === 0;
+          const isLast = index === allPosts.length - 1
+
+          const item = (
+            <li
+              key={post.id}
+              ref={isLast ? lastPostElementRef : null}
+              className="border border-secondary-200 rounded-xl bg-secondary-50/70 hover:border-primary-400"
+            >
+              <Post postDto={post} />
+            </li>
+          );
+
+          if (isFirst) {
             return (
-              <>
-                <li key={post.id} ref={lastPostElementRef}
-                  className={`border border-secondary-200 rounded-xl ${isMouseEnter ? "bg-secondary-50/75 ": "bg-secondary-100 "}`}
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={() => setIsMouseEnter(false)}
-                >
-                  <Post postDto={post} />
-                </li>
-                <li role="none">
+              <React.Fragment key={`frag-${post.id}`}>
+                {item}
+                {/* <li key={`${post.id}-sep`} role="none">
                   <div className="my-1 h-px bg-secondary-400" role="separator" />
-                </li>
-              </>
-
-
-            )
-          } else if (index == allPosts.length - 1) {
+                </li> */}
+              </React.Fragment>
+            );
+          } else if (isLast) {
+            return item;
+          } else {
             return (
-              <li key={post.id} ref={lastPostElementRef}
-                className={`bg-secondary-100 border border-secondary-200 rounded-xl`}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={() => setIsMouseEnter(false)}
-              >
-                <Post postDto={post} />
-              </li>
-            )
+              <React.Fragment key={`frag-${post.id}`}>
+                {item}
+                {/* <li key={`${post.id}-sep`} role="none">
+                  <div className="my-1 h-px bg-secondary-400" role="separator" />
+                </li> */}
+              </React.Fragment>
+            );
           }
 
-          return (
-            <>
-              <li key={post.id} ref={lastPostElementRef}
-                className={`bg-secondary-100 border border-secondary-200 rounded-xl`}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={() => setIsMouseEnter(false)}
-              >
-                <Post postDto={post} />
-              </li>
-              <li role="none">
-                <div className="my-1 h-px bg-secondary-400" role="separator" />
-              </li>
-            </>
-          )
+          return (<></>);
         })}
       </ul>
     </div>

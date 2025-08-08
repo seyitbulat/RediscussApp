@@ -1,5 +1,6 @@
 import JoinButton from "@/components/JoinButton";
 import Post from "@/components/Post";
+import PostCreate from "@/components/PostCreate";
 import SubredisPostFeed from "@/components/SubredisPostFeed";
 import Response from "@/lib/response";
 import { getSubredisByName } from "@/lib/subredis"
@@ -47,6 +48,11 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
           <JoinButton subredisId={subredis?.id || ""} />
         </div>
       </div>
+
+      <div className="ml-12 mr-12 mt-2">
+        <PostCreate/>
+      </div>
+      
       <div className="m-12 p-2">
 
         <SubredisPostFeed subredisId={subredis?.id || ""} initialPosts={initialPostsData} />
