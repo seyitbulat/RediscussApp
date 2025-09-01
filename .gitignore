@@ -80,3 +80,4 @@ ScaffoldingReadMe.txt
 ./rediscuss-ui/node_modules
 
 ./Rediscuss.Microservices/.vs
+/Rediscuss.Microservices/.vs/Rediscuss/DesignTimeBuild/.dtbcache.v2

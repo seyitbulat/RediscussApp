@@ -1,9 +1,14 @@
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Rediscuss.ForumService.Consumers;
 using Rediscuss.ForumService.Data;
+using Rediscuss.Shared.Contracts;
+using Rediscuss.Shared.Contracts.Middlewares;
 using StackExchange.Redis;
 using System.Security.Claims;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,85 +17,129 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 
+builder.Services.AddMassTransit(config =>
+{
+
+	config.AddConsumers(typeof(Program).Assembly);
+	config.UsingRabbitMq((ctx, cfg) =>
+	{
+		cfg.Host("localhost", "/", h => { h.Username("guest"); h.Password("guest"); });
+
+		cfg.ReceiveEndpoint("user-created-event-queue", e =>
+		{
+			e.ConfigureConsumer<UserCreatedConsumer>(ctx);
+		});
+	});
+});
+
+
 builder.Services.AddControllers();
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+	options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(builder.Configuration["Jwt:Key"])),
-            RoleClaimType = ClaimTypes.Role
-        };
-    });
+	.AddJwtBearer(options =>
+	{
+		options.TokenValidationParameters = new TokenValidationParameters
+		{
+			ValidateIssuer = true,
+			ValidateAudience = true,
+			ValidateLifetime = true,
+			ValidateIssuerSigningKey = true,
+			ValidIssuer = builder.Configuration["Jwt:Issuer"],
+			ValidAudience = builder.Configuration["Jwt:Audience"],
+			IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(builder.Configuration["Jwt:Key"])),
+			RoleClaimType = ClaimTypes.Role
+		};
+
+		options.Events = new JwtBearerEvents
+		{
+			OnChallenge = async context =>
+			{
+				context.HandleResponse();
+				context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+				context.Response.ContentType = "application/json";
+
+				var error = new ApiError { Status = "401", Title = "Unauthorized", Detail = "Bu iþlemi yapmak için giriþ yapmanýz gerekmektedir." };
+				var response = StandardApiResponse<object>.Fail(new List<ApiError> { error });
+
+				await context.Response.WriteAsJsonAsync(response);
+			},
+
+			OnForbidden = async context =>
+			{
+				context.Response.StatusCode = StatusCodes.Status403Forbidden;
+				context.Response.ContentType = "application/json";
+
+				var error = new ApiError { Status = "403", Title = "Forbidden", Detail = "Bu iþlemi gerçekleþtirmek için gerekli yetkiye sahip deðilsiniz." };
+				var response = StandardApiResponse<object>.Fail(new List<ApiError> { error });
+
+				await context.Response.WriteAsJsonAsync(response);
+			}
+		};
+	});
+
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(setup =>
 {
-    var jwtSecurityScheme = new OpenApiSecurityScheme
-    {
-        BearerFormat = "JWT",
-        Name = "JWT Authentication",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = JwtBearerDefaults.AuthenticationScheme,
-        Reference = new OpenApiReference { Id = JwtBearerDefaults.AuthenticationScheme, Type = ReferenceType.SecurityScheme }
-    };
+	var jwtSecurityScheme = new OpenApiSecurityScheme
+	{
+		BearerFormat = "JWT",
+		Name = "JWT Authentication",
+		In = ParameterLocation.Header,
+		Type = SecuritySchemeType.Http,
+		Scheme = JwtBearerDefaults.AuthenticationScheme,
+		Reference = new OpenApiReference { Id = JwtBearerDefaults.AuthenticationScheme, Type = ReferenceType.SecurityScheme }
+	};
 
-    setup.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
-    setup.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
+	setup.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+	setup.AddSecurityRequirement(new OpenApiSecurityRequirement
+	{
+		{
+			new OpenApiSecurityScheme
+			{
+				Reference = new OpenApiReference
+				{
+					Type = ReferenceType.SecurityScheme,
+					Id = "Bearer"
+				}
+			},
+			Array.Empty<string>()
+		}
+	});
 });
 
 builder.Services.AddSingleton<ForumContext>();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
-    var connectionString = builder.Configuration["RedisConnectionString"];
-    return ConnectionMultiplexer.Connect(connectionString);
+	var connectionString = builder.Configuration["RedisConnectionString"];
+	return ConnectionMultiplexer.Connect(connectionString);
 });
 
 
 var app = builder.Build();
 
+app.UseMiddleware<GlobalErrorHandling>();
+
 
 using (var scope = app.Services.CreateScope())
 {
-    var dbService = app.Services.GetRequiredService<ForumContext>();
-    var seeder = new Seeder(dbService);
-    await seeder.DbInitialize();
+	var dbService = app.Services.GetRequiredService<ForumContext>();
+	var seeder = new Seeder(dbService);
+	await seeder.DbInitialize();
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 

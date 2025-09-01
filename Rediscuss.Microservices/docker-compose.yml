@@ -43,6 +43,13 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: String.123!
       ME_CONFIG_MONGODB_SERVER: rediscuss-mongo-db
 
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rediscuss-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
 volumes:
   mssql_data:
   mongo_data:

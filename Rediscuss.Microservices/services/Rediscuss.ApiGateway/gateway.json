@@ -1,31 +1,42 @@
 {
     "ReverseProxy": {
         "Routes": {
+            "swagger-identity": {
+                "ClusterId": "identity-cluster",
+                "Order": 0,
+                "Match": {
+                    "Path": "/swagger/identity-cluster/{**path}"
+                },
+                "Transforms": [
+                    { "PathPattern": "/swagger/{**path}" }
+                ]
+            },
+            "swagger-forum": {
+                "ClusterId": "forum-cluster",
+                "Order": 0,
+                "Match": {
+                    "Path": "/swagger/forum-cluster/{**path}"
+                },
+                "Transforms": [
+                    { "PathPattern": "/swagger/{**path}" }
+                ]
+            },
             "identity-routes": {
                 "ClusterId": "identity-cluster",
                 "Match": {
-                    "Path": "/gateway/auth/{**catch-all}"
+                    "Path": "/gateway/Identity/{**catch-all}"
                 },
                 "Transforms": [
-                    { "PathPattern": "/api/auth/{**catch-all}" }
-                ]
-            },
-            "users-routes": {
-                "ClusterId": "identity-cluster",
-                "Match": {
-                    "Path": "/gateway/users/{**catch-all}"
-                },
-                "Transforms": [
-                    { "PathPattern": "/api/users/{**catch-all}" }
+                    { "PathPattern": "/IdentityApi/{**catch-all}" }
                 ]
             },
             "forum-routes": {
                 "ClusterId": "forum-cluster",
                 "Match": {
-                    "Path": "/gateway/{**catch-all}"
+                    "Path": "/gateway/Forum/{**catch-all}"
                 },
                 "Transforms": [
-                    { "PathPattern": "/api/{**catch-all}" }
+                    { "PathPattern": "/ForumApi/{**catch-all}" }
                 ]
             }
         },
@@ -35,12 +46,24 @@
                     "destination1": {
                         "Address": "http://localhost:5213"
                     }
+                },
+                "Metadata": {
+                    "Swagger": {
+                        "Path": "/swagger/v1/swagger.json",
+                        "Name": "Identity API"
+                    }
                 }
             },
             "forum-cluster": {
                 "Destinations": {
                     "destination1": {
                         "Address": "http://localhost:5012"
+                    }
+                },
+                "Metadata": {
+                    "Swagger": {
+                        "Path": "/swagger/v1/swagger.json",
+                        "Name": "Forum API"
                     }
                 }
             }

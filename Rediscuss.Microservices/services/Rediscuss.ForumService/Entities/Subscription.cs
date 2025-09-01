@@ -1,5 +1,5 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
 
 namespace Rediscuss.ForumService.Entities
 {
@@ -8,11 +8,6 @@ namespace Rediscuss.ForumService.Entities
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-
-        public int UserId { get; set; }
-
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string SubredisId { get; set; }
 
 
         public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
@@ -24,5 +19,12 @@ namespace Rediscuss.ForumService.Entities
 
 
         public bool? IsDeleted { get; set; } = false;
+
+
+        //Iliskiler
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string SubredisId { get; set; }
+
+        public int UserId { get; set; }
     }
 }
