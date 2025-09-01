@@ -38,20 +38,19 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
   return (
     <div className="z-10">
       <div className="justify-center flex grow-1 border border-secondary-200 h-30 rounded-xl ml-12 mr-12">
-        <div className="h-30 grow-1 rounded-xl bg-white flex items-center shadow relative">
-          <div className="w-20 h-20 rounded-full m-2 shadow bg-gradient-to-br from-primary to-accent-300"></div>
+        <div className="h-30 grow-1 rounded-xl bg-white flex items-center relative shadow-lg bg-gradient-to-r from-purple-500 to-pink-500">
           <div>
-            <h1 className="p-2 text-2xl text-primary">
+            <h1 className="p-2 text-2xl text-white font-bold">
               r/{subredis?.name}
             </h1>
-            <span className="p-2">{subredis?.description}</span>
+            <span className="p-2 text-white/70">{subredis?.description}</span>
           </div>
           <JoinButton subredisId={subredis?.id || ""} />
         </div>
       </div>
 
       <div className="ml-12 mr-12 mt-2">
-        <PostCreateBasic subredisId={subredis?.id}/>
+        <PostCreateBasic subredisId={subredis?.id} />
       </div>
 
       <div className="m-12 p-2">
