@@ -9,7 +9,7 @@ import { Button } from "./ui/button";
 export default async function Sidebar() {
     const subscriptions = await getSubscriptions();
     return (
-        <div id="sidebar" className="sticky group w-60 bg-sidebar -pl-2 pr-2 pt-2 border-r-1 border-r-border flex flex-col z-40">
+        <div id="sidebar" className="sticky group min-w-60 bg-sidebar -pl-2 pr-2 pt-2 border-r-1 border-r-border flex flex-col z-40">
             <div className="">
                 <ul role="menu">
                     <li role="none">

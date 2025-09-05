@@ -17,7 +17,7 @@ export default async function Header() {
     const user = await getAuthenticatedUser();
 
     return (
-        <header className="sticky top-0 bg-background w-full h-14 px-4 flex items-center justify-between border-b border-border z-50">
+        <header className="sticky top-0 bg-background w-full min-h-14 px-4 flex items-center justify-between border-b border-border z-50">
             {/* Sol Bölüm - Logo */}
             <div className="flex items-center justify-start flex-1">
                 <Link href="/" className="flex items-center gap-2">

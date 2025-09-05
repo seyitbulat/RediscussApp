@@ -12,13 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 
-// Helper component to show loading state while form is submitting
 function LoginStatus() {
     const { pending } = useFormStatus();
     return pending ? <LoadingOverlay /> : null;
 }
 
-// Submit button that shows pending state
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
@@ -39,7 +37,6 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-background">
-            {/* Decorative background elements */}
             <div className="inset-0 overflow-hidden absolute -z-10">
                 <div className="absolute w-40 h-40 rounded-full -top-10 -right-10 opacity-10 animate-pulse bg-primary/30"></div>
                 <div className="absolute w-60 h-60 rounded-full -bottom-10 -left-10 opacity-10 animate-pulse bg-primary/40"></div>
