@@ -1,57 +1,65 @@
-import { LogOut, Settings, User2, UserIcon } from "lucide-react";
-import DropdownButton from "./Static/DropdownButton";
+import { Settings, User2, UserIcon } from "lucide-react";
 import SearchBar from "./Static/SearchBar";
 import { getAuthenticatedUser } from "@/lib/header";
 import LogoutButton from "./LogoutButton";
-
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default async function Header() {
     const user = await getAuthenticatedUser();
 
     return (
-        <div className="sticky top-0 bg-gradient-to-b from-background-500 to-background-500 w-full min-h-13 px-2 items-center flex justify-between border-b-1 border-b-secondary-200 z-50">
-            <div className="flex items-center">
-                <div className="h-10 w-10 bg-primary-500 rounded-lg text-white inline-flex justify-center items-center shadow shadow-primary-300">
-                    <span className="font-bold">R</span>
-                </div>
-                <span className="text-text-900 text-xl font-bold mx-2">Rediscuss</span>
+        <header className="sticky top-0 bg-background w-full h-14 px-4 flex items-center justify-between border-b border-border z-50">
+            {/* Sol Bölüm - Logo */}
+            <div className="flex items-center justify-start flex-1">
+                <Link href="/" className="flex items-center gap-2">
+                    <div className="h-10 w-10 bg-primary rounded-lg text-primary-foreground inline-flex justify-center items-center shadow shadow-primary-300">
+                        <span className="font-bold">R</span>
+                    </div>
+                    <span className="text-secondary-foreground text-xl font-bold hidden sm:inline-block">Rediscuss</span>
+                </Link>
             </div>
-            <SearchBar className="h-8" />
-            <DropdownButton label={`/${user?.username}`} iconName={"UserIcon"} className="">
-                <ul role="menu" className="list-none m-0 p-1 min-w-48">
-                    <li role="none">
-                        <button
-                            type="button"
-                            role="menuitem"
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm
-                   hover:bg-secondary-50 focus:bg-secondary-100 outline-none"
-                        >
-                            <User2 className="w-5 h-5 flex-shrink-0" aria-hidden />
-                            <span className="flex-1 text-left truncate">Profil</span>
-                        </button>
-                    </li>
 
-                    <li role="none">
-                        <div className="my-1 h-px bg-secondary-200" role="separator" />
-                    </li>
+            {/* Orta Bölüm - Arama Çubuğu */}
+            <div className="flex items-center justify-center flex-auto">
+                <SearchBar className="h-9 w-full max-w-lg" />
+            </div>
 
-                    <li role="none">
-                        <button
-                            type="button"
-                            role="menuitem"
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm
-                   hover:bg-secondary-50 focus:bg-secondary-100 outline-none"
-                        >
-                            <Settings className="w-5 h-5 flex-shrink-0" aria-hidden />
-                            <span className="flex-1 text-left truncate">Ayarlar</span>
-                        </button>
-                    </li>
-
-                    <li role="none">
-                        <LogoutButton />
-                    </li>
-                </ul>
-            </DropdownButton>
-        </div >
+            {/* Sağ Bölüm - Kullanıcı Menüsü */}
+            <div className="flex items-center justify-end flex-1">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="gap-2 px-3">
+                            <UserIcon className="h-5 w-5" />
+                            <span className="hidden md:inline-block">{user?.username}</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Hesabım</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                            <User2 className="mr-2 h-4 w-4" />
+                            <span>Profil</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Ayarlar</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <LogoutButton />
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </header>
     );
 }

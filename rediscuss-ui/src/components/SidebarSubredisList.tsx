@@ -13,7 +13,7 @@ export default async function SidebarSubredisList({ initialSubscriptions }: Side
     }
 
     if (initialSubscriptions.length === 0) {
-        return <p className="text-sm text-text-300 mt-4">Henüz aboneliğiniz yok.</p>;
+        return <p className="text-sm text-card-foreground mt-4">Henüz aboneliğiniz yok.</p>;
     }
 
     return (

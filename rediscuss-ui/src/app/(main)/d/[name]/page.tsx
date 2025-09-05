@@ -1,13 +1,14 @@
 import JoinButton from "@/components/JoinButton";
 import Post from "@/components/Post";
 import PostCreate from "@/components/PostCreate";
-import PostCreateBasic from "@/components/PostCreateBasic";
 import SubredisPostFeed from "@/components/SubredisPostFeed";
 import Response from "@/lib/response";
 import { getSubredisByName } from "@/lib/subredis"
+import { JsonApiResource, StandardApiResponse } from "@/types/api";
 import { PostDto } from "@/types/dto";
 import { useMutation } from "@tanstack/react-query";
 import { BellIcon, LucideCookie, MinusIcon, Plus, PlusIcon, SubscriptIcon, UserCircle, VoteIcon } from "lucide-react";
+import { cookies } from "next/headers";
 
 
 interface SubredisPageProps {
@@ -22,15 +23,28 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
   const subredis = await getSubredisByName(name);
 
   const fetchInitialPosts = async () => {
-    const response = await fetch(`${process.env.NEXT_BASE_URL}/api/post/getBySubredis/${subredis?.id}?page=1&pageSize=5`, {
-      method: 'GET'
+    const token = (await cookies()).get('token')?.value;
+
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/posts/getbysubredis/${subredis}?page=${1}&pageSize=${5}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      cache: 'no-store'
     });
 
-    const data: Response<PostDto[]> = await response.json();
 
-    const posts = data.data;
+    if (!apiResponse.ok) {
+      return [];
+    }
 
-    return posts ? posts : [];
+    const data: StandardApiResponse<JsonApiResource<PostDto>[]> = await apiResponse.json();
+
+    const resources: JsonApiResource<PostDto>[] = data.data || [];
+
+    const posts: PostDto[] = resources.map(resource => resource.attributes);
+
+    return posts;
   }
   const initialPostsData = await fetchInitialPosts();
 
@@ -50,7 +64,6 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
       </div>
 
       <div className="ml-12 mr-12 mt-2">
-        <PostCreateBasic subredisId={subredis?.id} />
       </div>
 
       <div className="m-12 p-2">

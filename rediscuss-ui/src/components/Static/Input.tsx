@@ -16,7 +16,7 @@ export default function Input({ label, className, ...props }: InputProps) {
             </label>
             <input
                 type="text"
-                className={twMerge( `border border-secondary-200 bg-background-600 rounded-lg h-8 outline-0
+                className={twMerge( `border border-input bg-background rounded-md h-8 outline-0
                 hover:border-primary-300
                 focus:border-primary-400`, className)}
                 {...props}
