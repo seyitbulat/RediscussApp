@@ -21,7 +21,7 @@ export default async function SidebarSubredisList({ initialSubscriptions }: Side
             <ul>
                 {initialSubscriptions.map(subredis => (
                     <li key={subredis.id}>
-                        <Link href={`/r/${subredis.name}`}>
+                        <Link href={`/d/${subredis.name}`}>
                             {subredis.name}
                         </Link>
                     </li>

@@ -8,7 +8,7 @@ import Link from "next/link";
 export default async function Sidebar() {
     const subscriptions = await getSubscriptions();
     return (
-        <div id="sidebar" className="relative group w-60 bg-secondary-100 pl-2 pr-2 pt-2 border-r-1 border-r-secondary-200 flex flex-col">
+        <div id="sidebar" className="sticky group w-60 bg-secondary-100 pl-2 pr-2 pt-2 border-r-1 border-r-secondary-200 flex flex-col z-40">
             <div className="">
                 <ul role="menu">
                     <li role="none">
@@ -17,7 +17,7 @@ export default async function Sidebar() {
                                 type="button"
                                 role="menuitem"
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm
-                   hover:bg-secondary-50 focus:bg-secondary-100 outline-none"
+                   hover:bg-secondary-50 focus:bg-secondary-100 outline-none z-50"
                             >
                                 <HomeIcon className="w-5 h-5 flex-shrink-0" aria-hidden />
                                 <span className="flex-1 text-left truncate">Ana Sayfa</span>

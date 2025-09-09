@@ -9,7 +9,7 @@ export default async function Header() {
     const user = await getAuthenticatedUser();
 
     return (
-        <div className="sticky top-0 bg-gradient-to-b from-background-500 to-background-500 w-full h-12  px-2 items-center flex justify-between border-b-1 border-b-secondary-200">
+        <div className="sticky top-0 bg-gradient-to-b from-background-500 to-background-500 w-full min-h-13 px-2 items-center flex justify-between border-b-1 border-b-secondary-200 z-50">
             <div className="flex items-center">
                 <div className="h-10 w-10 bg-primary-500 rounded-lg text-white inline-flex justify-center items-center shadow shadow-primary-300">
                     <span className="font-bold">R</span>
