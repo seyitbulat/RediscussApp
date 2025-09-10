@@ -32,7 +32,7 @@ export default function RootLayout({
       <div className="main flex flex-row w-full flex-grow overflow-hidden">
         <Sidebar />
 
-        <main className="flex-grow overflow-y-auto p-3 bg-background">
+        <main className="flex-grow min-w-0 overflow-y-auto p-3 bg-background">
           {children}
 
         </main>

@@ -14,7 +14,8 @@ export default function SidebarClient({ subscriptions }: { subscriptions: Subred
         <div id="sidebar"
             aria-expanded={!collapsed}
             data-collapsed={collapsed}
-            className="sticky group w-60 data-[collapsed=false]:min-w-60 bg-sidebar -pl-2 pr-2 pt-2 border-r-1 border-r-border flex flex-col z-40 data-[collapsed=true]:max-w-16">
+            className="sticky group w-60 flex-none shrink-0 bg-sidebar -pl-2 pr-2 pt-2 border-r-1 border-r-border flex flex-col z-40 
+            transition-[width] duration-300 ease-in-out data-[collapsed=true]:w-16">
             <div className="">
                 <ul role="menu">
                     <li role="none">
@@ -39,7 +40,7 @@ export default function SidebarClient({ subscriptions }: { subscriptions: Subred
 
 
             <div className="mt-4">
-                <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2">Subredises</span>
+                <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2 transition-opacity duration-200 ease-in-out group-data-[collapsed=true]:opacity-0">Subredises</span>
                 <div className="my-1 h-px bg-secondary" role="separator" />
                 <SidebarSubredisList initialSubscriptions={subscriptions} />
             </div>
