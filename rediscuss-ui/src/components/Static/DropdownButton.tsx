@@ -61,7 +61,7 @@ export default function DropdownButton({ label, className, children, iconName }:
             : null;
     return (
         <div className="relative group">
-            <button type="button" className={twMerge(`group rounded-xl min-w-30 inline-flex items-center px-2 gap-1 h-8 bg-background-500 text-primary-500 justify-between border border-secondary-100 shadow
+            <button type="button" className={twMerge(`group rounded-xl min-w-30 inline-flex items-center px-2 gap-1 h-8 bg-background-500 text-primary-500 justify-between border border-border/40 shadow
                 transition-colors
                 hover:bg-background-600
                 focus:bg-background-700
@@ -90,7 +90,7 @@ export default function DropdownButton({ label, className, children, iconName }:
                     className="z-[1000]"  
                 >
                     <div
-                        className="min-w-[10rem] rounded-md border border-secondary-200 bg-white shadow-lg p-2"
+                        className="min-w-[10rem] rounded-md border border-border/40 bg-white shadow-lg p-2"
                         style={styles}
                     >
                         {children}

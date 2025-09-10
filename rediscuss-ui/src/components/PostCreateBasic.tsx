@@ -1,9 +1,11 @@
 'use client';
 import { ChevronDown, SendIcon } from "lucide-react";
-import Input from "./Static/Input";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { create } from "domain";
+import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
+import { Button } from "./ui/button";
+import { Textarea } from "./ui/textarea";
+import { Input } from "./ui/input";
 
 
 
@@ -18,13 +20,6 @@ export default function PostCreateBasic({ subredisId }: PostCreateBasicProps) {
     const [content, setContent] = useState("");
 
     const queryClient = useQueryClient();
-
-
-
-    const handleExpand = () => {
-        setExpanded(v => !v);
-    }
-
 
     const createPost = useMutation({
         mutationFn: async () => {
@@ -58,58 +53,51 @@ export default function PostCreateBasic({ subredisId }: PostCreateBasicProps) {
     }
 
     return (
-        <div className={`flex flex-col border border-secondary-200 rounded-xl gap-2 ${expanded ? "max-h-96" : "max-h-14"} transition-all duration-300 ease-in-out bg-background-500 shadow-lg`}>
-            <div className="flex justify-between items-center">
-                <div className="flex m-2 items-center gap-2">
+        <Card className="rounded-b-xl rounded-t-none overflow-hidden">
+            <CardHeader className="flex flex-row justify-between items-center p-3">
+                <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-cyan-400 shadow-inner" />
-                    <p className="text-center text-sm">Yeni gönderi oluştur</p>
+                    <p className="text-sm font-medium">Yeni gönderi oluştur</p>
                 </div>
 
-                <div className="mr-2 flex">
-                    <button
-                        className="border-secondary-100 shadow
-                        rounded-full
-                transition-colors
-                hover:bg-background-600
-                focus:bg-background-700
-                    "
-                        onClick={handleExpand}
-                    >
-                        <ChevronDown className={
-                            `w-6 h-6 text-accent-400 transition-all duration-300
-                            ${expanded ? "rotate-0" : "rotate-180"}`
-                        } />
-                    </button>
-                </div>
-            </div>
-            <div className={`flex flex-col gap-2 m-2 max-h-0 overflow-hidden transition-all duration-300 ease-in-out ${expanded ? "max-h-96" : "max-h-0"}`}>
-
-                <div className="">
-                    <Input label="Başlık" onChange={(e) => setTitle(e.currentTarget.value)} />
-                </div>
-                <div className="flex flex-col">
-                    <label className="text-sm font-semibold">Gönderi İçeriği</label>
-                    <textarea className="border border-secondary-200 bg-background-600 rounded-lg outline-0
-                hover:border-primary-300
-                focus:border-primary-400" placeholder="Gönderi içeriğini buraya yazın..."
-                        onChange={(e) => setContent(e.currentTarget.value)}
-                    ></textarea>
-                </div>
-            </div>
-
-            <div className={`flex m-2 max-h-0 overflow-hidden transition-all duration-300 ease-in-out ${expanded ? "max-h-12" : "max-h-0"}`}>
-                <button
-                    className="inline-flex gap-2 right-4 border border-primary-200 rounded-xl min-w-25 h-8 items-center p-2 text-accent-500 shadow-lg
-                        hover:bg-background-600
-                        focus:bg-background-700
-                    "
-                    onClick={handleSubmit}
-                    disabled={createPost.isPending}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full"
+                    onClick={() => setExpanded(v => !v)}
+                    aria-expanded={expanded}
                 >
-                    <SendIcon className="w-5 h-5" />
-                    {createPost.isPending ? "Yayınlanıyor..." : "Gönderi Oluştur"}
-                </button>
+                    <ChevronDown className={`w-6 h-6 text-accent-400 transition-transform duration-300 ${!expanded && "rotate-180"}`} />
+                </Button>
+            </CardHeader>
+            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                <div className="overflow-hidden">
+                    <CardContent className="pt-0 pb-4 px-4">
+                        <div className="space-y-2">
+                            <Input
+                                label="Başlık"
+                                value={title}
+                                onChange={(e) => setTitle(e.currentTarget.value)}
+                            />
+                            <div className="flex flex-col space-y-1">
+                                <label className="text-sm font-semibold">Gönderi İçeriği</label>
+                                <Textarea
+                                    value={content}
+                                    onChange={(e) => setContent(e.currentTarget.value)}
+                                    placeholder="Gönderi içeriğini buraya yazın..."
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="px-4 pb-4">
+                        <Button onClick={handleSubmit} disabled={createPost.isPending} className="gap-2">
+                            <SendIcon className="w-5 h-5" />
+                            {createPost.isPending ? "Yayınlanıyor..." : "Gönderi Oluştur"}
+                        </Button>
+                    </CardFooter>
+                </div>
             </div>
-        </div>
+        </Card>
+
     );
 }
