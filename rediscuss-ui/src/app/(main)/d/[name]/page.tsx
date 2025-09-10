@@ -47,8 +47,28 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
 
     return posts;
   }
-  const initialPostsData = await fetchInitialPosts();
 
+  const isFollowSubredis = async () => {
+    const token = (await cookies()).get('token')?.value;
+
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/Subredises/${subredis?.id}/isFollowSubredis`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      cache: 'no-store'
+    });
+    if (!apiResponse.ok) {
+      return false;
+    }
+
+    const data: StandardApiResponse<JsonApiResource<boolean>> = await apiResponse.json();
+
+    return data.data?.attributes || false;
+
+  }
+  const initialPostsData = await fetchInitialPosts();
+  const isFollowed = await isFollowSubredis();
 
   return (
     <div className="z-10">
@@ -60,7 +80,9 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
             </h1>
             <span className="p-2 text-white/70">{subredis?.description}</span>
           </div>
-          <JoinButton subredisId={subredis?.id || ""} />
+         {!isFollowed &&
+           <JoinButton subredisId={subredis?.id || ""} />
+         }
         </div>
       </div>
 

@@ -54,3 +54,25 @@ export async function setPostAction(title: string, content: string, subredisId: 
 
     return data.data?.attributes;
 }
+
+
+export async function followSubredis(subredisId: string){
+    const token = (await cookies()).get("token")?.value;
+
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/Subredises/${subredisId}/follow`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+        }
+    });
+    
+      if (!apiResponse.ok) {
+        throw new Error(apiResponse.statusText);
+    }
+
+    const data: StandardApiResponse<JsonApiResource<PostDto>> = await apiResponse.json();
+
+    return data.data?.attributes;
+
+}

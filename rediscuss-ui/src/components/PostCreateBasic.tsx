@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
+import { setPostAction } from "@/app/(main)/d/[name]/actions";
 
 
 
@@ -23,22 +24,8 @@ export default function PostCreateBasic({ subredisId }: PostCreateBasicProps) {
 
     const createPost = useMutation({
         mutationFn: async () => {
-            const response = await fetch('/api/post/create', {
-                method: 'POST',
-                body: JSON.stringify({
-                    title,
-                    content,
-                    subredisId
-                })
-            });
-
-            if (!response.ok) {
-                const err = await response.text();
-                throw new Error(err || 'Gönderi oluşturulamadı');
-            }
-
-            const { data } = await response.json();
-            return data;
+            const response = setPostAction(title, content, subredisId || "");
+            return response;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['posts', subredisId] });
