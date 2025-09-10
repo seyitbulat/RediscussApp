@@ -106,6 +106,35 @@ namespace Rediscuss.ForumService.Controllers
 			return Ok(StandardApiResponse<object>.Success(null, meta: meta));
 		}
 
+		[HttpGet("{subredisId}/isFollowSubredis")]
+		[Authorize(Roles = "User")]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> IsFollowSubredis(string subredisId)
+		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+			var subredisExists = await _context.Subredises.Find(s => s.Id == subredisId && s.IsDeleted == false).AnyAsync();
+			if (subredisExists == false)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Subredis bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
+
+			var existingSubscription = await _context.Subscriptions.Find(s => s.SubredisId == subredisId && s.UserId == userId && s.IsDeleted == false).FirstOrDefaultAsync();
+			var resource = new JsonApiResource<bool> { Type = "Subscriptions", Attributes = false };
+			if (existingSubscription != null)
+			{
+				resource = new JsonApiResource<bool>
+				{
+					Id = existingSubscription.SubredisId.ToString(),
+					Attributes = true
+				};
+			}
+
+			return Ok(StandardApiResponse<JsonApiResource<bool>>.Success(resource));
+		}
+
 		[HttpGet("GetByName/{subredisName}")]
 		[Authorize(Roles = "User")]
 		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<SubredisDto>>), StatusCodes.Status200OK)]
