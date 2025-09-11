@@ -1,6 +1,5 @@
 ﻿using MassTransit.Initializers;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Rediscuss.ForumService.Data;
@@ -8,9 +7,7 @@ using Rediscuss.ForumService.DTOs;
 using Rediscuss.ForumService.Entities;
 using Rediscuss.Shared.Contracts;
 using StackExchange.Redis;
-using System.Net;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Rediscuss.ForumService.Controllers
 {
@@ -164,6 +161,34 @@ namespace Rediscuss.ForumService.Controllers
 			}
 
 			return Ok(StandardApiResponse<List<JsonApiResource<PostDto>>>.Success(data, meta: meta, links: links));
+		}
+
+		[HttpGet]
+		[AllowAnonymous]
+		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<PostDto>>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> GetPost([FromRoute] string id)
+		{
+			var filter = Builders<Post>.Filter.Eq(s => s.Id, id) & Builders<Post>.Filter.Eq(s => s.IsDeleted, false);
+			var baseQuery = _context.Posts.Aggregate()
+				.Match(filter)
+				.SortByDescending(p => p.CreatedAt)
+				.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
+				.Lookup<PostWithDetails, Subredis, PostWithDetails>(_context.Subredises, p => p.SubredisId, s => s.Id, r => r.Subredises);
+
+			var p = await baseQuery.FirstOrDefaultAsync();
+
+			var voteKey = $"post:votes:{p.Id}";
+			var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
+			var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
+			await Task.WhenAll(upvotesTask, downvotesTask);
+
+			var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Subredises.FirstOrDefault()?.Name);
+			var resource = new JsonApiResource<PostDto> { Type = "posts", Id = p.Id, Attributes = dto };
+
+			
+
+			return Ok(StandardApiResponse<JsonApiResource<PostDto>>.Success(resource));
 		}
 
 		[HttpGet("feed")]

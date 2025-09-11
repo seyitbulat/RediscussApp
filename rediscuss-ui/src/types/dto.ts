@@ -32,3 +32,10 @@ export interface PostDto{
     createdByUserName: string,
     subredisName: string
 }
+
+
+
+export interface Vote{
+    upVotes: number,
+    downVotes: number
+}
