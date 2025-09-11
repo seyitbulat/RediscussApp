@@ -1,17 +1,75 @@
 'use client';
-import { PostDto } from "@/types/dto";
+import { PostDto, Vote } from "@/types/dto";
 import { ArrowBigDown, ArrowBigUp, BadgeCheck, LucideCookie, MinusIcon, PlusIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns"
 import { tr } from "date-fns/locale";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { votePost } from "@/app/(main)/d/[name]/actions";
 
 export interface PostProps {
-    postDto: PostDto
+    postDto: PostDto;
+    subredisId: string;
 }
 
 
-export default function Post({ postDto }: PostProps) {
+export default function Post({ postDto, subredisId }: PostProps) {
+    const queryClient = useQueryClient();
+
+    const mutation = useMutation({
+        mutationFn: async (params: { postId: string; isUpvote: boolean }) => {
+            const res = await votePost(params.postId, params.isUpvote);
+            return res;
+        },
+        onMutate: async ({ postId, isUpvote }) => {
+            await queryClient.cancelQueries({ queryKey: ["posts", subredisId] });
+            const previous = queryClient.getQueryData<any>(["posts", subredisId]);
+            queryClient.setQueryData(["posts", subredisId], (oldData: any) => {
+                if (!oldData) return oldData;
+                const pages = oldData.pages?.map((page: any) => ({
+                    ...page,
+                    posts: (page.posts || []).map((p: PostDto) => {
+                        if (p.id !== postId) return p;
+                        return {
+                            ...p,
+                            upVotes: isUpvote ? p.upVotes + 1 : p.upVotes,
+                            downVotes: !isUpvote ? p.downVotes + 1 : p.downVotes,
+                        } as PostDto;
+                    }),
+                }));
+                return { ...oldData, pages };
+            });
+            return { previous };
+        },
+        onError: (_err, _vars, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(["posts", subredisId], context.previous);
+            }
+        },
+        onSuccess: (vote: Vote | undefined) => {
+            if (!vote) return;
+            queryClient.setQueryData(["posts", subredisId], (oldData: any) => {
+                if (!oldData) return oldData;
+                const pages = oldData.pages?.map((page: any) => ({
+                    ...page,
+                    posts: (page.posts || []).map((p: PostDto) => {
+                        if (p.id !== postDto.id) return p;
+                        return { ...p, upVotes: vote.upVotes, downVotes: vote.downVotes } as PostDto;
+                    }),
+                }));
+                return { ...oldData, pages };
+            });
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["posts", subredisId] });
+        },
+    });
+
+    const handleVote = (isUpvote: boolean) => {
+        if (mutation.isPending) return;
+        mutation.mutate({ postId: postDto.id, isUpvote });
+    };
 
 
     const relativeDate = formatDistanceToNow(postDto.createdAt, { addSuffix: true, locale: tr }).replace("yaklaşık", "")
@@ -46,6 +104,8 @@ export default function Post({ postDto }: PostProps) {
                                 variant="ghost"
                                 size="icon"
                                 className="group/upVote relative h-8 w-8 rounded-full"
+                                onClick={() => handleVote(true)}
+                                disabled={mutation.isPending}
                             >
                                 <LucideCookie className="w-5 h-5 group-hover/upVote:text-primary-400 transition-all" />
 
@@ -61,8 +121,10 @@ export default function Post({ postDto }: PostProps) {
                             <Button
                                 type="button"
                                 variant="ghost"
-                                size="icon"                                
+                                size="icon"
                                 className="group/downVote relative h-8 w-8 rounded-full"
+                                onClick={() => handleVote(false)}
+                                disabled={mutation.isPending}
                             >
                                 <LucideCookie className="w-5 h-5 group-hover/downVote:text-accent-400 transition-all" />
 

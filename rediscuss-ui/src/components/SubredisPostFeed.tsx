@@ -65,7 +65,7 @@ export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedP
           const isLast = index === allPosts.length - 1;
           return (
             <li key={post.id} ref={isLast ? lastPostElementRef : null}>
-              <Post postDto={post} />
+              <Post postDto={post} subredisId={subredisId} />
             </li>
           );
         })}
