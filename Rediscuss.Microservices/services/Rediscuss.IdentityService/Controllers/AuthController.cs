@@ -1,4 +1,5 @@
-﻿using MassTransit;
+﻿using Azure;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,6 +9,7 @@ using Rediscuss.IdentityService.Entities;
 using Rediscuss.Shared.Contracts;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using static Rediscuss.Shared.Contracts.UserContracts;
 
@@ -109,9 +111,18 @@ namespace Rediscuss.IdentityService.Controllers
 			}
 
 			var token = GenerateJwtToken(user);
+			var refreshToken = GenerateRefreshToken(user);
 
-			var tokenDto = new TokenDto { Token = token };
+			var tokenDto = new TokenDto { Token = token, RefreshToken = refreshToken.Token};
 
+			var oldRefreshTokens = _context.RefreshTokens.Where(x => x.UserId == user.UserId);
+			
+			if (oldRefreshTokens.Any())
+				_context.RefreshTokens.RemoveRange(oldRefreshTokens);
+
+			await _context.RefreshTokens.AddAsync(refreshToken);
+
+			await _context.SaveChangesAsync();
 			var resource = new JsonApiResource<TokenDto> { Type = "authenticationToken", Id = Guid.NewGuid().ToString(), Attributes = tokenDto };
 
 			var meta = new Dictionary<string, object> { { "message", "Başarıyla Giriş Yapıldı" } };
@@ -120,6 +131,70 @@ namespace Rediscuss.IdentityService.Controllers
 
 
 			return Ok(response);
+		}
+
+		[HttpPost("refresh-token")]
+		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<RefreshToken>>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status401Unauthorized)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status400BadRequest)]
+		public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto refreshTokenDto)
+		{
+			var userId = Convert.ToInt32(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+			var user = await _context.Users.Select(x => new User
+			{
+				UserId = x.UserId,
+				Username = x.Username,
+				Email = x.Email,
+				PasswordHash = x.PasswordHash,
+				UserRoles = x.UserRoles.Select(y => new UserRole { Role = new Role { Name = y.Role.Name } }).ToList()
+			}).FirstOrDefaultAsync(u => u.UserId == userId); 
+			
+			_ = user == null ? throw new BadHttpRequestException("Invalid or expired refresh token") : "";
+
+			var storedRefreshToken = _context.RefreshTokens.FirstOrDefault(rt => rt.Token == refreshTokenDto.RefreshToken);
+			if (storedRefreshToken == null)
+			{
+				throw new BadHttpRequestException("Invalid or expired refresh token");
+			}
+
+			var isValid = storedRefreshToken.UserId == user.UserId;
+			_ = !isValid ? throw new BadHttpRequestException("Invalid or expired refresh token") : "";
+
+			storedRefreshToken.Revoked = DateTime.Now;
+
+			var token = GenerateJwtToken(user);
+			var refreshToken = GenerateRefreshToken(user);
+
+			await _context.RefreshTokens.AddAsync(refreshToken);
+			
+			await _context.SaveChangesAsync();
+			
+			var tokenDto = new TokenDto { Token = token, RefreshToken = refreshToken.Token};
+
+			var resource = new JsonApiResource<TokenDto> { Type = "authenticationToken", Id = Guid.NewGuid().ToString(), Attributes = tokenDto };
+
+			var response = StandardApiResponse<JsonApiResource<TokenDto>>.Success(resource);
+
+			return Ok(response);
+
+		}
+
+		private RefreshToken GenerateRefreshToken(User user)
+		{
+			using var rngCryptoServiceProvider = new RNGCryptoServiceProvider();
+
+			var randomBytes = new byte[64];
+
+			rngCryptoServiceProvider.GetBytes(randomBytes);
+
+			return new RefreshToken
+			{
+				UserId = user.UserId,
+				Token = Convert.ToBase64String(randomBytes),
+				Expires = DateTime.Now.AddDays(7),
+				Created = DateTime.Now
+			};
 		}
 
 		private string GenerateJwtToken(User user)

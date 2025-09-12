@@ -1,8 +1,7 @@
 ﻿namespace Rediscuss.IdentityService.DTOs
 {
-	public class TokenDto
+	public class RefreshTokenDto
 	{
-        public string Token { get; set; }
 		public string RefreshToken { get; set; }
 	}
 }
