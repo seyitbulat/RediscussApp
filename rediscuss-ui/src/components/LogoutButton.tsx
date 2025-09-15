@@ -12,7 +12,7 @@ const LogoutButton = React.forwardRef<
 >(({ className, ...props }, ref) => {
 
     const handleOnClick = async () => {
-        logout();
+        await logout();
     };
     return (
         <Button

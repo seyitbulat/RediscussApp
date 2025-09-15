@@ -21,13 +21,16 @@ export async function login(prevState: LoginFormState, formData: FormData): Prom
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password, rememberMe })
         });
 
         var data: StandardApiResponse<JsonApiResource<TokenDto>> = await apiResponse.json();
 
         const token = data?.data?.attributes?.token;
         const refreshToken = data?.data?.attributes?.refreshToken;
+
+        const tokenExpiresIn = data?.data?.attributes?.accessTokenExpiresIn;
+        const refreshTokenExpiresIn = data?.data?.attributes?.refreshTokenExpiresIn;
 
         if (!token) {
             return { error: "Token alınamadı, API yanıtı beklenmedik formatta.", success: false };
@@ -41,13 +44,13 @@ export async function login(prevState: LoginFormState, formData: FormData): Prom
 
         (await cookies()).set('token', token, {
             httpOnly: true,
-            maxAge: maxAge,
+            maxAge: tokenExpiresIn,
             path: '/'
         });
 
         (await cookies()).set('refreshToken', refreshToken, {
             httpOnly: true,
-            maxAge: maxAge,
+            maxAge: refreshTokenExpiresIn,
             path: '/'
         });
 
@@ -74,11 +77,6 @@ export async function refreshToken() {
         logout();
     }
 
-    const token = (await cookies()).get('token')?.value;
-    if (!token) {
-        logout();
-    }
-
     try {
         const apiResponse = await fetch(`${process.env.API_BASE_URL}/identity/auth/refresh-token`, {
             method: 'POST',
@@ -88,10 +86,18 @@ export async function refreshToken() {
             body: JSON.stringify({ refreshToken })
         });
 
+
+        if (!apiResponse.ok) {
+            logout();
+        }
+
         var data: StandardApiResponse<JsonApiResource<TokenDto>> = await apiResponse.json();
 
         const newToken = data?.data?.attributes?.token;
         const newRefreshToken = data?.data?.attributes?.refreshToken;
+
+        const tokenExpiresIn = data?.data?.attributes?.accessTokenExpiresIn;
+        const refreshTokenExpiresIn = data?.data?.attributes?.refreshTokenExpiresIn;
 
         if (!newToken) {
             return { error: "Token alınamadı, API yanıtı beklenmedik formatta.", success: false };
@@ -101,17 +107,17 @@ export async function refreshToken() {
             return { error: "Token alınamadı, API yanıtı beklenmedik formatta.", success: false };
         }
 
-        const maxAge =  60 * 60 * 24 * 7;
+        const maxAge = 60 * 60 * 24 * 7;
 
         (await cookies()).set('token', newToken, {
             httpOnly: true,
-            maxAge: maxAge,
+            maxAge: tokenExpiresIn,
             path: '/'
         });
 
         (await cookies()).set('refreshToken', newRefreshToken, {
             httpOnly: true,
-            maxAge: maxAge,
+            maxAge: refreshTokenExpiresIn,
             path: '/'
         });
         return data?.data?.attributes;

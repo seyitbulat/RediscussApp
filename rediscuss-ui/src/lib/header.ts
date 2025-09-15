@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 
 export async function getAuthenticatedUser(): Promise<UserDto | null> {
     try {
+        
         const token = (await cookies()).get('token')?.value;
         const response = await fetch(`${process.env.API_BASE_URL}/identity/users/me`, {
             method: 'GET',

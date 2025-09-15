@@ -1,6 +1,8 @@
 export interface TokenDto{
     token: string;
     refreshToken: string;
+    accessTokenExpiresIn: number;
+    refreshTokenExpiresIn: number;
 }
 
 export interface UserDto{

@@ -16,10 +16,10 @@ namespace Rediscuss.IdentityService.Entities
 
 		public required string Token { get; set; }
 		public DateTime Expires { get; set; }
-		public DateTime Created { get; set; } = DateTime.UtcNow;
+		public DateTime Created { get; set; } = DateTime.Now;
 		public DateTime? Revoked { get; set; } 
 
-		public bool IsExpired => DateTime.UtcNow >= Expires;
+		public bool IsExpired => DateTime.Now >= Expires;
 		public bool IsRevoked => Revoked != null;
 		public bool IsActive => !IsRevoked && !IsExpired;
 	}
