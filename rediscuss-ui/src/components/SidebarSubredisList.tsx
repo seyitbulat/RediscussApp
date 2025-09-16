@@ -17,9 +17,7 @@ export default function SidebarSubredisList({ initialSubscriptions }: SidebarSub
         return null;
     }
 
-    if (initialSubscriptions.length === 0) {
-        return <p className="text-sm text-card-foreground mt-4">Henüz aboneliğiniz yok.</p>;
-    }
+    
 
     return (
         <div>

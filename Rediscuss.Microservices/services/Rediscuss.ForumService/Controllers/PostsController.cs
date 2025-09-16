@@ -199,7 +199,6 @@ namespace Rediscuss.ForumService.Controllers
 		.Match(p => p.IsDeleted == false)
 		.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
 		.Lookup<PostWithDetails, Subredis, PostWithDetails>(_context.Subredises, p => p.SubredisId, s => s.Id, r => r.Subredises)
-		.Project(r => )
 		.ToListAsync();
 
 			var tasks = allPostsWithDetails.Select(async p =>

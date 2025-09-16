@@ -68,7 +68,6 @@ export async function getHomeFeedPosts(options: { page: number, pageSize: number
             hasNextPage: totalPages ? page < totalPages : false,
         };
     }
-
     catch (error) {
         return null;
     }

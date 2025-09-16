@@ -8,7 +8,7 @@ import { useSidebar } from "./providers/SidebarContext";
 import SidebarToggle from "./SidebarToggle";
 
 
-export default function SidebarClient({ subscriptions }: { subscriptions: SubredisDto[] | null }) {
+export default function SidebarClient({ subscriptions, recommendations }: { subscriptions: SubredisDto[] | null, recommendations: SubredisDto[] | null }) {
     const { collapsed, toggle } = useSidebar();
     return (
         <div id="sidebar"
@@ -37,7 +37,11 @@ export default function SidebarClient({ subscriptions }: { subscriptions: Subred
                 <SidebarToggle />
             </div>
 
-
+             <div className="mt-4">
+                <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2 transition-opacity duration-200 ease-in-out group-data-[collapsed=true]:opacity-0">Öneriler</span>
+                <div className="my-1 h-px bg-secondary" role="separator" />
+                <SidebarSubredisList initialSubscriptions={recommendations} />
+            </div>
 
             <div className="mt-4">
                 <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2 transition-opacity duration-200 ease-in-out group-data-[collapsed=true]:opacity-0">Subredises</span>

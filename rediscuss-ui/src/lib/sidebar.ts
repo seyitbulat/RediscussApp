@@ -34,3 +34,30 @@ export async function getSubscriptions(): Promise<SubredisDto[] | null> {
         return null;
     }
 }
+
+export async function getRecommendedSubredises(): Promise<SubredisDto[] | null>{
+
+    try{
+        const token = (await cookies()).get('token')?.value;
+        const response = await fetch(`${process.env.APi_BASE_URL}/forum/subredises/GetRecommendations`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            cache: 'no-store'
+        });
+        
+        if(!response.ok){
+            return null;
+        }
+
+        const data: StandardApiResponse<JsonApiResource<SubredisDto>[]> = await response.json();
+
+        const subredises = data.data?.map(s => s.attributes);
+
+        return subredises || [];
+    }catch(error){
+        return null;
+    }
+}
+
