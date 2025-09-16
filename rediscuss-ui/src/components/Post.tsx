@@ -6,7 +6,8 @@ import { tr } from "date-fns/locale";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { votePost } from "@/app/(main)/d/[name]/actions";
+import { votePost } from "@/lib/post";
+import Link from "next/link";
 
 export interface PostProps {
     postDto: PostDto;
@@ -86,7 +87,12 @@ export default function Post({ postDto, subredisId }: PostProps) {
                                 <span className="font-medium">{postDto.createdByUserName}</span>
                                 <BadgeCheck className="h-4 w-4 text-primary-500" />
                                 <span>•</span>
-                                <span>{postDto.subredisName}</span>
+                                {postDto.subredisName &&
+                                <Link href={`/d/${postDto.subredisName}`} className="hover:underline">
+                                    <span>{postDto.subredisName}</span>
+                                </Link>
+}
+                                
                                 <span>•</span>
                                 <span>{relativeDate}</span>
                             </div>

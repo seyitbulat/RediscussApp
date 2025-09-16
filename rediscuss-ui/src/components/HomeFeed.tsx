@@ -3,14 +3,11 @@ import React, { useCallback, useMemo, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import Post from "./Post";
 import { PostDto } from "@/types/dto";
-import { getPostsAction } from "@/lib/post";
+import { getHomeFeedPosts } from "@/lib/post";
 
-interface PostFeedProps {
-  initialPosts: PostDto[];
-  subredisId: string;
-}
 
-export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedProps) {
+
+export default function HomePostFeed({ initialPosts }: {initialPosts: PostDto[]}) {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   const {
@@ -19,12 +16,12 @@ export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedP
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["posts", subredisId],
+    queryKey: ["posts", "home"],
     queryFn: async ({ pageParam = 1 }) => {
-      return await getPostsAction(subredisId, pageParam);
+      return await getHomeFeedPosts({ page: pageParam, pageSize: 5 });
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => (lastPage.hasNextPage ? lastPage.nextPage : undefined),
+    getNextPageParam: (lastPage) => (lastPage?.hasNextPage ? lastPage.nextPage : undefined),
     initialData: {
       pages: [
         {
@@ -54,7 +51,7 @@ export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedP
   );
 
   const allPosts = useMemo(() => {
-    const allFetched = data?.pages?.flatMap((p) => p.posts || []);
+    const allFetched = data?.pages?.flatMap((p) => p?.posts || []);
     return allFetched?.length ? allFetched : initialPosts;
   }, [data, initialPosts]);
 
@@ -65,7 +62,7 @@ export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedP
           const isLast = index === allPosts.length - 1;
           return (
             <li key={post.id} ref={isLast ? lastPostElementRef : null}>
-              <Post postDto={post} subredisId={subredisId} />
+              <Post postDto={post} subredisId={post.subredisId} />
             </li>
           );
         })}

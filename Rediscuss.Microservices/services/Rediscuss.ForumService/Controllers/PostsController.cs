@@ -186,28 +186,70 @@ namespace Rediscuss.ForumService.Controllers
 			var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Subredises.FirstOrDefault()?.Name);
 			var resource = new JsonApiResource<PostDto> { Type = "posts", Id = p.Id, Attributes = dto };
 
-			
+
 
 			return Ok(StandardApiResponse<JsonApiResource<PostDto>>.Success(resource));
 		}
 
 		[HttpGet("feed")]
-		[Authorize(Roles = "User,Admin")]
 		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<PostDto>>>), StatusCodes.Status200OK)]
 		public async Task<IActionResult> GetHomePageFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 25)
 		{
-			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
-			var subcribedSubredisIds = await _context.Subscriptions.Find(s => s.UserId == userId && s.IsDeleted == false).Project(s => s.SubredisId).ToListAsync();
+			var allPostsWithDetails = await _context.Posts.Aggregate()
+		.Match(p => p.IsDeleted == false)
+		.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
+		.Lookup<PostWithDetails, Subredis, PostWithDetails>(_context.Subredises, p => p.SubredisId, s => s.Id, r => r.Subredises)
+		.Project(r => )
+		.ToListAsync();
 
-			if (!subcribedSubredisIds.Any())
+			var tasks = allPostsWithDetails.Select(async p =>
 			{
-				return Ok(StandardApiResponse<List<JsonApiResource<PostDto>>>.Success(new List<JsonApiResource<PostDto>>()));
+				var voteKey = $"post:votes:{p.Id}";
+				var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
+				var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
+				await Task.WhenAll(upvotesTask, downvotesTask);
+
+				int upvotes = (int)await upvotesTask;
+				int downvotes = (int)await downvotesTask;
+
+				var dto = new PostDto(p, upvotes, downvotes, p.FormUsers.FirstOrDefault()?.Username, p.Subredises.FirstOrDefault()?.Name);
+				dto.HotScore = CalculateHotScore(upvotes, downvotes, p.CreatedAt.GetValueOrDefault());
+				return dto;
+			});
+
+			var allPostDtos = await Task.WhenAll(tasks);
+
+			var sortedPosts = allPostDtos.OrderByDescending(p => p.HotScore).ToList();
+
+			var pagedPosts = sortedPosts
+				.Skip((page - 1) * pageSize)
+				.Take(pageSize)
+				.Select(dto => new JsonApiResource<PostDto> { Type = "posts", Id = dto.Id, Attributes = dto })
+				.ToList();
+
+			long totalCount = sortedPosts.Count;
+			int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+			var meta = new Dictionary<string, object>
+	{
+		{ "totalCount", totalCount },
+		{ "totalPages", totalPages }
+	};
+
+			var links = new Dictionary<string, string>();
+			if (page < totalPages)
+			{
+				links.Add("next", $"/ForumApi/Posts/hot-feed?page={page + 1}&pageSize={pageSize}");
+			}
+			if (page > 1)
+			{
+				links.Add("prev", $"/ForumApi/Posts/hot-feed?page={page - 1}&pageSize={pageSize}");
 			}
 
-			var postsWithDetails = await GetPostsWithDetails(Builders<Post>.Filter.In(p => p.SubredisId, subcribedSubredisIds), page, pageSize);
-			return Ok(StandardApiResponse<List<JsonApiResource<PostDto>>>.Success(postsWithDetails));
+			return Ok(StandardApiResponse<List<JsonApiResource<PostDto>>>.Success(pagedPosts, meta: meta, links: links));
 		}
 
+		[NonAction]
 		private async Task<List<JsonApiResource<PostDto>>> GetPostsWithDetails(FilterDefinition<Post> filter, int page, int pageSize)
 		{
 			var posts = await _context.Posts.Aggregate()
@@ -231,6 +273,17 @@ namespace Rediscuss.ForumService.Controllers
 			});
 
 			return (await Task.WhenAll(tasks)).ToList();
+		}
+
+
+		[NonAction]
+		public double CalculateHotScore(int upvotes, int downvotes, DateTime createdAt)
+		{
+			var score = upvotes - downvotes;
+			var order = Math.Log10(Math.Max(Math.Abs(score), 1));
+			var sign = Math.Sign(score);
+			var seconds = createdAt.Subtract(new DateTime(1970, 1, 1)).TotalSeconds - 1134028003;
+			return Math.Round(sign * order + seconds / 45000, 7);
 		}
 	}
 }

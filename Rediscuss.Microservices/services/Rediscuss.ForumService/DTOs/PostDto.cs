@@ -30,7 +30,7 @@ namespace Rediscuss.ForumService.DTOs
 
         public string SubredisName { get; set; }
 
-
+		public double HotScore { get; set; }
 		public PostDto(Post post, int upVotes, int downVotes, string createdByUserName, string subredisName)
 		{
 			Id = post.Id;
