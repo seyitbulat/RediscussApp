@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Rediscuss.ForumService.Data;
@@ -11,18 +10,18 @@ using System.Security.Claims;
 
 namespace Rediscuss.ForumService.Controllers
 {
-    [Route("ForumApi/[controller]")]
-    [ApiController]
-    public class SubredisesController : CustomBaseController
-    {
-        private readonly ForumContext _context;
-        private readonly IDatabase _redisDb;
+	[Route("ForumApi/[controller]")]
+	[ApiController]
+	public class SubredisesController : CustomBaseController
+	{
+		private readonly ForumContext _context;
+		private readonly IDatabase _redisDb;
 
-        public SubredisesController(ForumContext context, IConnectionMultiplexer redis)
-        {
-            _context = context;
-            _redisDb = redis.GetDatabase();
-        }
+		public SubredisesController(ForumContext context, IConnectionMultiplexer redis)
+		{
+			_context = context;
+			_redisDb = redis.GetDatabase();
+		}
 
 		[HttpPost]
 		[Authorize(Roles = "User")]
@@ -34,7 +33,7 @@ namespace Rediscuss.ForumService.Controllers
 
 			var isSubredisExits = await _context.Subredises.Find(s => s.Name == dto.Name).AnyAsync();
 
-			if(isSubredisExits)
+			if (isSubredisExits)
 			{
 				var error = new ApiError { Status = "400", Title = "Çakışma", Detail = $"Bu {dto.Name} isimmli subredis zaten mevcut." };
 				return BadRequest(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
@@ -106,6 +105,35 @@ namespace Rediscuss.ForumService.Controllers
 			return Ok(StandardApiResponse<object>.Success(null, meta: meta));
 		}
 
+		[HttpGet("{subredisId}/isFollowSubredis")]
+		[Authorize(Roles = "User")]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> IsFollowSubredis(string subredisId)
+		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+			var subredisExists = await _context.Subredises.Find(s => s.Id == subredisId && s.IsDeleted == false).AnyAsync();
+			if (subredisExists == false)
+			{
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Subredis bulunamadı." };
+				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
+			}
+
+			var existingSubscription = await _context.Subscriptions.Find(s => s.SubredisId == subredisId && s.UserId == userId && s.IsDeleted == false).FirstOrDefaultAsync();
+			var resource = new JsonApiResource<bool> { Type = "Subscriptions", Attributes = false };
+			if (existingSubscription != null)
+			{
+				resource = new JsonApiResource<bool>
+				{
+					Id = existingSubscription.SubredisId.ToString(),
+					Attributes = true
+				};
+			}
+
+			return Ok(StandardApiResponse<JsonApiResource<bool>>.Success(resource));
+		}
+
 		[HttpGet("GetByName/{subredisName}")]
 		[Authorize(Roles = "User")]
 		[ProducesResponseType(typeof(StandardApiResponse<JsonApiResource<SubredisDto>>), StatusCodes.Status200OK)]
@@ -136,6 +164,44 @@ namespace Rediscuss.ForumService.Controllers
 			var response = StandardApiResponse<JsonApiResource<SubredisDto>>.Success(resource);
 
 			return Ok(response);
+		}
+
+		[HttpGet("GetRecommendations")]
+		[Authorize(Roles = "User,Admin")]
+		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<SubredisDto>>>), StatusCodes.Status200OK)]
+		public async Task<IActionResult> GetRecommendations()
+		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+			var subscribedSubredisIds = await _context.Subscriptions
+	   .Find(s => s.UserId == userId && s.IsDeleted == false)
+	   .Project(s => s.SubredisId)
+	   .ToListAsync();
+
+			var recommendations = await _context.Subredises.Aggregate()
+	   .Match(s => s.IsDeleted == false && !subscribedSubredisIds.Contains(s.Id))
+	   .Sample(5)
+	   .ToListAsync();
+
+			if (!recommendations.Any())
+			{
+				return Ok(StandardApiResponse<List<JsonApiResource<SubredisDto>>>.Success(new List<JsonApiResource<SubredisDto>>()));
+			}
+
+			var resources = recommendations.Select(s => new JsonApiResource<SubredisDto>
+			{
+				Type = "subredises",
+				Id = s.Id.ToString(),
+				Attributes = new SubredisDto
+				{
+					Id = s.Id,
+					Name = s.Name,
+					Description = s.Description,
+					CreatedBy = s.CreatedBy
+				}
+			}).ToList();
+
+			return Ok(StandardApiResponse<List<JsonApiResource<SubredisDto>>>.Success(resources));
 		}
 
 	}

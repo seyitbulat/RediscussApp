@@ -26,25 +26,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-secondary-100 text-text-400`}
-      >
-        <div className="h-screen flex flex-col">
-          <Header />
+    <div className="h-screen flex flex-col">
+      <Header />
 
-          <div className="main flex w-full flex-grow">
-            <Sidebar />
+      <div className="main flex flex-row w-full flex-grow overflow-hidden">
+        <Sidebar />
 
-            <main className="flex-grow p-3">
-              <QueryProvider>
-                {children}
+        <main className="flex-grow min-w-0 overflow-y-auto p-3 bg-background">
+          {children}
 
-              </QueryProvider>
-            </main>
-          </div>
-        </div>
-      </body>
-    </html>
+        </main>
+      </div>
+    </div>
+
   );
 }

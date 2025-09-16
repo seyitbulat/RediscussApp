@@ -1,135 +1,113 @@
 'use client';
 
 import LoadingOverlay from "@/components/Static/LoadingOverlay";
-import { AlertCircle, EyeIcon, EyeOffIcon, Loader2, UserIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { login, LoginFormState } from "@/lib/actions/auth";
+import { AlertCircle, EyeIcon, EyeOffIcon } from "lucide-react";
+import { useActionState, useState } from "react";
+import { useFormStatus } from "react-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 
+function LoginStatus() {
+    const { pending } = useFormStatus();
+    return pending ? <LoadingOverlay /> : null;
+}
+
+function SubmitButton() {
+    const { pending } = useFormStatus();
+    return (
+        <Button
+            type="submit"
+            className="w-full"
+            disabled={pending}
+        >
+            {pending ? "Giriş Yapılıyor..." : "Giriş Yap"}
+        </Button>
+    );
+}
 
 export default function Login() {
-    const router = useRouter();
-
     const [showPassword, setShowPassword] = useState(false);
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
-
-    const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setError('');
-        setIsLoading(true);
-
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password, rememberMe })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                router.refresh();
-                router.push('/');
-            }else{
-                setError(data.message || 'Giriş Yapılırken Hata Oluştu');
-            }
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Geçersiz Kullanıcı Adı veya Parola');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const initialState: LoginFormState = { error: null, success: false };
+    const [state, formAction] = useActionState(login, initialState);
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-accent-50 to-primary-50 via-white">
-            
-            {isLoading && (
-                <LoadingOverlay/>
-            )}
-
-            <div className="inset-0 overflow-hidden absolute">
-                <div className="absolute w-40 h-40 rounded-full -top-10 -right-10 opacity-10 animate-pulse bg-primary-500"></div>
-                <div className="absolute w-60 h-60 rounded-full -bottom-10 -left-10 opacity-10 animate-pulse bg-primary-600"></div>
-                <div className="absolute w-20 h-20 rounded-full top-1/2 opacity-10 animate-bounce bg-primary-200"></div>
+        <div className="min-h-screen flex justify-center items-center bg-background">
+            <div className="inset-0 overflow-hidden absolute -z-10">
+                <div className="absolute w-40 h-40 rounded-full -top-10 -right-10 opacity-10 animate-pulse bg-primary/30"></div>
+                <div className="absolute w-60 h-60 rounded-full -bottom-10 -left-10 opacity-10 animate-pulse bg-primary/40"></div>
+                <div className="absolute w-20 h-20 rounded-full top-1/2 left-1/4 opacity-10 animate-bounce bg-primary/20"></div>
             </div>
-            <div className="bg-white rounded-xl max-w-sm shadow-lg p-8 w-full">
-                <div className="mt-2 text-center">
-                    <div className="w-16 h-16 inline-flex bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl justify-center items-center shadow-lg">
-                        <span className="font-bold text-white text-2xl select-none">R</span>
-                    </div>
-                    <h1 className="text-2xl font-semibold mb-6 text-center select-none">Rediscuss</h1>
-                </div>
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 text-red-700">
-                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                        <span className="text-sm">{error}</span>
-                    </div>
-                )}
-                <form onSubmit={handleLogin}>
-                    <div className="relative mt-2 group">
 
-                        <input
-                            required
-                            type="text"
-                            placeholder=" "
-                            className="peer w-full border pt-4 pb-1 px-2 border-gray-300 rounded text-sm
-                              focus:border-accent-500 focus:outline-none transition-colors"
-                            onInput={(e) => e.currentTarget.value ? e.currentTarget.classList.add('has-value') : e.currentTarget.classList.remove('has-value')}
-                            onChange={(e) => setUsername(e.target?.value)}
-                        />
-
-                        <label className="absolute left-1 top-2.5 pointer-events-none text-transparent select-none transition-all
-                        peer-placeholder-shown:top-2.5 peer-placeholder-shown:left-2 peer-placeholder-shown:text-gray-500
-                        peer-focus:top-0 peer-focus:text-accent-500
-                        peer-[.has-value]:text-accent-500 peer-[.has-value]:top-0 peer-[.has-value]:left-2
-                        ">
-                            Kullanıcı Adı
-                        </label>
+            <Card className="w-full max-w-sm shadow-lg">
+                <CardHeader className="text-center">
+                    <div className="w-16 h-16 mx-auto bg-primary rounded-2xl flex justify-center items-center shadow-lg">
+                        <span className="font-bold text-primary-foreground text-2xl select-none">R</span>
                     </div>
+                    <CardTitle className="text-2xl font-semibold select-none pt-4">Rediscuss</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {state.error && (
+                        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center space-x-2 text-destructive text-sm">
+                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                            <span>{state.error}</span>
+                        </div>
+                    )}
+                    <form action={formAction} className="space-y-4">
+                        <LoginStatus />
+                        <div className="grid gap-2">
+                            <Label htmlFor="username">Kullanıcı Adı</Label>
+                            <Input
+                                id="username"
+                                required
+                                name="username"
+                                type="text"
+                                placeholder="kullanici_adi"
+                            />
+                        </div>
 
-                    <div className="relative mt-2 group">
-                        <input
-                            required
-                            type={showPassword ? "text" : "password"}
-                            placeholder=" "
-                            className="peer w-full border pt-4 pb-1 px-2 border-gray-300 rounded text-sm
-                              focus:border-accent-500 focus:outline-none transition-colors"
-                            onInput={(e) => e.currentTarget.value ? e.currentTarget.classList.add('has-value') : e.currentTarget.classList.remove('has-value')}
-                            onChange={(e) => setPassword(e.target?.value)}
-                        />
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">Şifre</Label>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    required
+                                    name="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="********"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                        </div>
 
-                        <label className="absolute left-1 top-2.5 pointer-events-none text-transparent select-none transition-all
-                        peer-placeholder-shown:top-2.5 peer-placeholder-shown:left-2 peer-placeholder-shown:text-gray-500
-                        peer-focus:top-0 peer-focus:text-accent-600
-                        peer-[.has-value]:text-accent-500 peer-[.has-value]:top-0 peer-[.has-value]:left-2
-                        ">
-                            Şifre
-                        </label>
-
-                        <button type="button" className="absolute right-2.5 top-2.5" onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? <EyeOffIcon className="text-gray-500" /> : <EyeIcon className="text-gray-500" />}
-                        </button>
-                    </div>
-
-                    <div className="relative mt-2 flex items-center justify-between text-sm">
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" className="w-4 h-4 text-secondary-500 border-background-500 checked:bg-primary-300 focus:ring-primary-200" onChange={(e) => setRememberMe(e.target.checked)}/>
-                            <span>Beni Hatırla</span>
-                        </label>
-                        <a href="#" className="text-accent-500">
-                            Şifremi Unuttum
-                        </a>
-                    </div>
-                    <div className="relative mt-4 flex justify-center">
-                        <button className="w-full h-10 bg-primary-500 rounded shadow-lg text-white font-bold hover:bg-primary-400 transition-colors" disabled={isLoading} >Giriş Yap</button>
-                    </div>
-                </form>
-            </div>
+                        <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="rememberMe" name="rememberMe" />
+                                <Label htmlFor="rememberMe" className="font-normal cursor-pointer select-none">
+                                    Beni Hatırla
+                                </Label>
+                            </div>
+                            <Link href="#" className="text-sm text-primary hover:underline">
+                                Şifremi Unuttum
+                            </Link>
+                        </div>
+                        
+                        <SubmitButton />
+                    </form>
+                </CardContent>
+            </Card>
         </div>
     );
 }

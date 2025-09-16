@@ -1,5 +1,8 @@
 export interface TokenDto{
     token: string;
+    refreshToken: string;
+    accessTokenExpiresIn: number;
+    refreshTokenExpiresIn: number;
 }
 
 export interface UserDto{
@@ -31,4 +34,11 @@ export interface PostDto{
     createdAt: Date,
     createdByUserName: string,
     subredisName: string
+}
+
+
+
+export interface Vote{
+    upVotes: number,
+    downVotes: number
 }

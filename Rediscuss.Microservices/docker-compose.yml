@@ -31,6 +31,9 @@ services:
     container_name: rediscuss-redis
     ports:
       - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
   
   mongo-express:
     image: mongo-express
@@ -53,3 +56,4 @@ services:
 volumes:
   mssql_data:
   mongo_data:
+  redis_data:

@@ -1,13 +1,20 @@
 import { cookies } from "next/headers";
+import { refreshToken } from "./lib/actions/auth";
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const token = request.cookies.get('token');
+    const refreshTokenStr = request.cookies.get('refreshToken');
     const { pathname } = request.nextUrl;
 
-    if (!token && pathname !== '/login') {
+    if (!token && !refreshTokenStr && pathname !== '/login') {
         return NextResponse.redirect(new URL('/login', request.url));
+    } else if (!token && refreshTokenStr && pathname !== '/login') {
+        await refreshToken();
+        return NextResponse.next();
+
     }
+
 
 
     if (token && pathname === '/login') {
