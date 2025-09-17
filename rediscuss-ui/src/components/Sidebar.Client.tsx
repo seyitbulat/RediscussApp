@@ -6,6 +6,10 @@ import { Button } from "./ui/button";
 import { SubredisDto } from "@/types/dto";
 import { useSidebar } from "./providers/SidebarContext";
 import SidebarToggle from "./SidebarToggle";
+import CreateSubredis from "@/app/(main)/_components/CreateSubredis";
+
+
+
 
 
 export default function SidebarClient({ subscriptions, recommendations }: { subscriptions: SubredisDto[] | null, recommendations: SubredisDto[] | null }) {
@@ -33,11 +37,13 @@ export default function SidebarClient({ subscriptions, recommendations }: { subs
                 </ul>
             </div>
 
-           <div className="absolute top-10 left-full -translate-x-1/2 rounded-full">
+            <div className="absolute top-10 left-full -translate-x-1/2 rounded-full">
                 <SidebarToggle />
             </div>
 
-             <div className="mt-4">
+
+
+            <div className="mt-4">
                 <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2 transition-opacity duration-200 ease-in-out group-data-[collapsed=true]:opacity-0">Öneriler</span>
                 <div className="my-1 h-px bg-secondary" role="separator" />
                 <SidebarSubredisList initialSubscriptions={recommendations} />
@@ -46,6 +52,10 @@ export default function SidebarClient({ subscriptions, recommendations }: { subs
             <div className="mt-4">
                 <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2 transition-opacity duration-200 ease-in-out group-data-[collapsed=true]:opacity-0">Subredises</span>
                 <div className="my-1 h-px bg-secondary" role="separator" />
+
+                <div className="m-4">
+                    <CreateSubredis />
+                </div>
                 <SidebarSubredisList initialSubscriptions={subscriptions} />
             </div>
         </div>

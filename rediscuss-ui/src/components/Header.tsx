@@ -1,4 +1,4 @@
-import { Settings, User2, UserIcon } from "lucide-react";
+import { LogOut, Settings, User2, UserIcon } from "lucide-react";
 import SearchBar from "./Static/SearchBar";
 import { getAuthenticatedUser } from "@/lib/header";
 import LogoutButton from "./LogoutButton";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { logout } from "@/lib/actions/auth";
 
 export default async function Header() {
     const user = await getAuthenticatedUser();
@@ -55,7 +56,15 @@ export default async function Header() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                            <LogoutButton />
+                            <form action={logout} className="w-full">
+                                <button
+                                    type="submit"
+                                    className="w-full flex items-center justify-start px-2 py-1.5 text-red-600 hover:text-red-700"
+                                >
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Çıkış Yap</span>
+                                </button>
+                            </form>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

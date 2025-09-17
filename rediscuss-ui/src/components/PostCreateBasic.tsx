@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
-import { setPostAction } from "@/app/(main)/d/[name]/actions";
+import { setPostAction } from "@/lib/post";
 
 
 
