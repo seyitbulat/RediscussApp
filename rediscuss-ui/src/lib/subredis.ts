@@ -5,7 +5,7 @@ import { cookies } from "next/headers"
 
 
 
-export async function getSubredisByName(subredisName: string): Promise<SubredisDto | null>{
+export async function getSubredisByName(subredisName: string): Promise<SubredisDto | null> {
     try {
         const token = (await cookies()).get('token')?.value;
 
@@ -17,11 +17,11 @@ export async function getSubredisByName(subredisName: string): Promise<SubredisD
             cache: 'no-store'
         })
 
-        if(!response.ok){
+        if (!response.ok) {
             return null;
         }
 
-        const data : StandardApiResponse<JsonApiResource<SubredisDto>> = await response.json();
+        const data: StandardApiResponse<JsonApiResource<SubredisDto>> = await response.json();
 
         const subredis = data.data?.attributes;
 
@@ -47,7 +47,7 @@ export async function setSubredis(name: string, description?: string): Promise<S
             cache: 'no-store'
         });
 
-          if(!response.ok){
+        if (!response.ok) {
             return null;
         }
 
@@ -57,6 +57,29 @@ export async function setSubredis(name: string, description?: string): Promise<S
         return subredis || null;
     } catch (error) {
         return null;
-    
+
+    }
+}
+
+
+export async function followSubredis(subredisId: string): Promise<boolean> {
+    try {
+        const token = (await cookies()).get('token')?.value;
+
+        const response = await fetch(`${process.env.Api_BASE_URL}/forum/subredises/${subredisId}/follow`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        return false;
     }
 }
