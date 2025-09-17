@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
     const refreshTokenStr = request.cookies.get('refreshToken');
     const { pathname } = request.nextUrl;
 
-    if (!token && !refreshTokenStr && pathname !== '/login') {
+    if (!token && !refreshTokenStr && pathname !== '/login' && pathname !== '/register') {
         return NextResponse.redirect(new URL('/login', request.url));
     } else if (!token && refreshTokenStr && pathname !== '/login') {
         await refreshToken();

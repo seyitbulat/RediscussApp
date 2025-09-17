@@ -1,19 +1,19 @@
 'use client';
 
 import LoadingOverlay from "@/components/Static/LoadingOverlay";
-import { login, LoginFormState } from "@/lib/actions/auth";
-import { AlertCircle, CheckCircle2, EyeIcon, EyeOffIcon } from "lucide-react";
-import { useActionState, useState } from "react";
+import { register, RegisterFormState } from "@/lib/actions/auth";
+import { AlertCircle, EyeIcon, EyeOffIcon } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
-function LoginStatus() {
+function RegisterStatus() {
     const { pending } = useFormStatus();
     return pending ? <LoadingOverlay /> : null;
 }
@@ -26,19 +26,23 @@ function SubmitButton() {
             className="w-full"
             disabled={pending}
         >
-            {pending ? "Giriş Yapılıyor..." : "Giriş Yap"}
+            {pending ? "Hesap oluşturuluyor..." : "Kayıt Ol"}
         </Button>
     );
 }
 
-export default function Login() {
+export default function Register() {
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
-    const initialState: LoginFormState = { error: null, success: false };
-    const [state, formAction] = useActionState(login, initialState);
-    const searchParams = useSearchParams();
-    const registrationMessage = searchParams.get("registered")
-        ? "Hesabın başarıyla oluşturuldu. Şimdi giriş yapabilirsin."
-        : null;
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const initialState: RegisterFormState = { error: null, success: false };
+    const [state, formAction] = useActionState(register, initialState);
+
+    useEffect(() => {
+        if (state.success) {
+            router.push('/login?registered=1');
+        }
+    }, [router, state.success]);
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-background">
@@ -56,12 +60,6 @@ export default function Login() {
                     <CardTitle className="text-2xl font-semibold select-none pt-4">Rediscuss</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {registrationMessage && (
-                        <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center space-x-2 text-emerald-600 text-sm">
-                            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                            <span>{registrationMessage}</span>
-                        </div>
-                    )}
                     {state.error && (
                         <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center space-x-2 text-destructive text-sm">
                             <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -69,7 +67,7 @@ export default function Login() {
                         </div>
                     )}
                     <form action={formAction} className="space-y-4">
-                        <LoginStatus />
+                        <RegisterStatus />
                         <div className="grid gap-2">
                             <Label htmlFor="username">Kullanıcı Adı</Label>
                             <Input
@@ -78,6 +76,17 @@ export default function Login() {
                                 name="username"
                                 type="text"
                                 placeholder="kullanici_adi"
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">E-posta</Label>
+                            <Input
+                                id="email"
+                                required
+                                name="email"
+                                type="email"
+                                placeholder="ornek@mail.com"
                             />
                         </div>
 
@@ -103,22 +112,39 @@ export default function Login() {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="rememberMe" name="rememberMe" />
-                                <Label htmlFor="rememberMe" className="font-normal cursor-pointer select-none">
-                                    Beni Hatırla
-                                </Label>
+                        <div className="grid gap-2">
+                            <Label htmlFor="confirmPassword">Şifreyi Onayla</Label>
+                            <div className="relative">
+                                <Input
+                                    id="confirmPassword"
+                                    required
+                                    name="confirmPassword"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="********"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                >
+                                    {showConfirmPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                                </Button>
                             </div>
-                            <Link href="#" className="text-sm text-primary hover:underline">
-                                Şifremi Unuttum
-                            </Link>
+                        </div>
+
+                        <div className="flex items-start space-x-2 text-sm">
+                            <Checkbox id="terms" name="terms" />
+                            <Label htmlFor="terms" className="font-normal cursor-pointer select-none text-left">
+                                Kayıt olarak kullanım koşullarını ve gizlilik politikasını kabul ediyorum.
+                            </Label>
                         </div>
 
                         <SubmitButton />
                     </form>
                     <p className="text-sm text-center text-muted-foreground mt-4">
-                        Henüz hesabın yok mu? <Link href="/register" className="text-primary hover:underline">Kayıt ol</Link>
+                        Zaten hesabın var mı? <Link href="/login" className="text-primary hover:underline">Giriş yap</Link>
                     </p>
                 </CardContent>
             </Card>
