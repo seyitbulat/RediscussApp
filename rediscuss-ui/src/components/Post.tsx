@@ -11,11 +11,11 @@ import Link from "next/link";
 
 export interface PostProps {
     postDto: PostDto;
-    subredisId: string;
+    discuitId: string;
 }
 
 
-export default function Post({ postDto, subredisId }: PostProps) {
+export default function Post({ postDto, discuitId }: PostProps) {
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
@@ -24,9 +24,9 @@ export default function Post({ postDto, subredisId }: PostProps) {
             return res;
         },
         onMutate: async ({ postId, isUpvote }) => {
-            await queryClient.cancelQueries({ queryKey: ["posts", subredisId] });
-            const previous = queryClient.getQueryData<any>(["posts", subredisId]);
-            queryClient.setQueryData(["posts", subredisId], (oldData: any) => {
+            await queryClient.cancelQueries({ queryKey: ["posts", discuitId] });
+            const previous = queryClient.getQueryData<any>(["posts", discuitId]);
+            queryClient.setQueryData(["posts", discuitId], (oldData: any) => {
                 if (!oldData) return oldData;
                 const pages = oldData.pages?.map((page: any) => ({
                     ...page,
@@ -45,12 +45,12 @@ export default function Post({ postDto, subredisId }: PostProps) {
         },
         onError: (_err, _vars, context) => {
             if (context?.previous) {
-                queryClient.setQueryData(["posts", subredisId], context.previous);
+                queryClient.setQueryData(["posts", discuitId], context.previous);
             }
         },
         onSuccess: (vote: Vote | undefined) => {
             if (!vote) return;
-            queryClient.setQueryData(["posts", subredisId], (oldData: any) => {
+            queryClient.setQueryData(["posts", discuitId], (oldData: any) => {
                 if (!oldData) return oldData;
                 const pages = oldData.pages?.map((page: any) => ({
                     ...page,
@@ -63,7 +63,7 @@ export default function Post({ postDto, subredisId }: PostProps) {
             });
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ["posts", subredisId] });
+            queryClient.invalidateQueries({ queryKey: ["posts", discuitId] });
         },
     });
 
@@ -87,9 +87,9 @@ export default function Post({ postDto, subredisId }: PostProps) {
                                 <span className="font-medium">{postDto.createdByUserName}</span>
                                 <BadgeCheck className="h-4 w-4 text-primary-500" />
                                 <span>•</span>
-                                {postDto.subredisName &&
-                                <Link href={`/d/${postDto.subredisName}`} className="hover:underline">
-                                    <span>{postDto.subredisName}</span>
+                                {postDto.discuitName &&
+                                <Link href={`/d/${postDto.discuitName}`} className="hover:underline">
+                                    <span>{postDto.discuitName}</span>
                                 </Link>
 }
                                 

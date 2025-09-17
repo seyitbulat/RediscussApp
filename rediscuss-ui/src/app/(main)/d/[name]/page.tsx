@@ -2,9 +2,9 @@ import JoinButton from "@/components/JoinButton";
 import Post from "@/components/Post";
 import PostCreate from "@/components/PostCreate";
 import PostCreateBasic from "@/components/PostCreateBasic";
-import SubredisPostFeed from "@/components/SubredisPostFeed";
+import DiscuitPostFeed from "@/components/DiscuitPostFeed";
 import Response from "@/lib/response";
-import { getSubredisByName } from "@/lib/subredis"
+import { getDiscuitByName } from "@/lib/discuit"
 import { JsonApiResource, StandardApiResponse } from "@/types/api";
 import { PostDto } from "@/types/dto";
 import { useMutation } from "@tanstack/react-query";
@@ -12,21 +12,21 @@ import { BellIcon, LucideCookie, MinusIcon, Plus, PlusIcon, SubscriptIcon, UserC
 import { cookies } from "next/headers";
 
 
-interface SubredisPageProps {
-  params: {
+interface DiscuitPageProps {
+  params: Promise<{
     name: string;
-  }
+  }>
 }
 
-export default async function SubredisPage({ params }: SubredisPageProps) {
+export default async function DiscuitPage({ params }: DiscuitPageProps) {
   const { name } = await params;
 
-  const subredis = await getSubredisByName(name);
+  const discuit = await getDiscuitByName(name);
 
   const fetchInitialPosts = async () => {
     const token = (await cookies()).get('token')?.value;
 
-    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/posts/getbysubredis/${subredis}?page=${1}&pageSize=${5}`, {
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/posts/getbydiscuit/${discuit}?page=${1}&pageSize=${5}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`
@@ -48,10 +48,10 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
     return posts;
   }
 
-  const isFollowSubredis = async () => {
+  const isFollowDiscuit = async () => {
     const token = (await cookies()).get('token')?.value;
 
-    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/Subredises/${subredis?.id}/isFollowSubredis`, {
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/discuits/${discuit?.id}/isFollowDiscuit`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`
@@ -68,7 +68,7 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
 
   }
   const initialPostsData = await fetchInitialPosts();
-  const isFollowed = await isFollowSubredis();
+  const isFollowed = await isFollowDiscuit();
 
   return (
     <div className="z-10">
@@ -76,23 +76,23 @@ export default async function SubredisPage({ params }: SubredisPageProps) {
         <div className="h-32 grow rounded-t-xl bg-white flex items-center relative shadow-lg bg-gradient-to-r from-purple-500 to-pink-500">
           <div>
             <h1 className="p-2 text-2xl text-white font-bold">
-              r/{subredis?.name}
+              r/{discuit?.name}
             </h1>
-            <span className="p-2 text-white/70">{subredis?.description}</span>
+            <span className="p-2 text-white/70">{discuit?.description}</span>
           </div>
          {!isFollowed &&
-           <JoinButton subredisId={subredis?.id || ""} />
+           <JoinButton discuitId={discuit?.id || ""} />
          }
         </div>
       </div>
 
       <div className="ml-12 mr-12">
-        <PostCreateBasic subredisId={subredis?.id || ""} />
+        <PostCreateBasic discuitId={discuit?.id || ""} />
       </div>
 
       <div className="m-12 p-2">
 
-        <SubredisPostFeed subredisId={subredis?.id || ""} initialPosts={initialPostsData} />
+        <DiscuitPostFeed discuitId={discuit?.id || ""} initialPosts={initialPostsData} />
 
       </div>
     </div>

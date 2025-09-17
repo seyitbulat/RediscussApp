@@ -11,14 +11,11 @@ const LogoutButton = React.forwardRef<
     React.ComponentPropsWithoutRef<typeof Button>
 >(({ className, ...props }, ref) => {
 
-    const handleOnClick = async () => {
-        await logout();
-    };
+   
     return (
         <Button
             variant="ghost"
             ref={ref}
-            onClick={handleOnClick}
             className={cn("w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 focus:bg-red-50", className)}
             {...props}
         >

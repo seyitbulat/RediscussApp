@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Rediscuss.ForumService.Entities
 {
-    public class Subredis
+    public class Discuit
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]

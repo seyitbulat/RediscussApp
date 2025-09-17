@@ -7,10 +7,10 @@ import { getPostsAction } from "@/lib/post";
 
 interface PostFeedProps {
   initialPosts: PostDto[];
-  subredisId: string;
+  discuitId: string;
 }
 
-export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedProps) {
+export default function DiscuitPostFeed({ initialPosts, discuitId }: PostFeedProps) {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   const {
@@ -19,9 +19,9 @@ export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedP
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["posts", subredisId],
+    queryKey: ["posts", discuitId],
     queryFn: async ({ pageParam = 1 }) => {
-      return await getPostsAction(subredisId, pageParam);
+      return await getPostsAction(discuitId, pageParam);
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.hasNextPage ? lastPage.nextPage : undefined),
@@ -65,7 +65,7 @@ export default function SubredisPostFeed({ initialPosts, subredisId }: PostFeedP
           const isLast = index === allPosts.length - 1;
           return (
             <li key={post.id} ref={isLast ? lastPostElementRef : null}>
-              <Post postDto={post} subredisId={subredisId} />
+              <Post postDto={post} discuitId={discuitId} />
             </li>
           );
         })}

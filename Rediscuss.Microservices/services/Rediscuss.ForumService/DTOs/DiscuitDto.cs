@@ -1,6 +1,6 @@
 ﻿namespace Rediscuss.ForumService.DTOs
 {
-    public class SubredisDto
+    public class DiscuitDto
     {
         public string Id { get; set; }
 

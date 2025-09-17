@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿﻿using System.ComponentModel.DataAnnotations;
 
 namespace Rediscuss.ForumService.DTOs
 {
@@ -9,6 +9,6 @@ namespace Rediscuss.ForumService.DTOs
         public string? Content { get; set; }
 
         [Required]
-        public string SubredisId { get; set; }
+        public string DiscuitId { get; set; }
     }
 }

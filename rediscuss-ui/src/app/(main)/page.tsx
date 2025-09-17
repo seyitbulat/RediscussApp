@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import HomePostFeed from "@/components/HomeFeed";
 import Sidebar from "@/components/Sidebar";
-import SubredisPostFeed from "@/components/SubredisPostFeed";
+import DiscuitPostFeed from "@/components/DiscuitPostFeed";
 import { Button } from "@/components/ui/button";
 import { getHomeFeedPosts } from "@/lib/post";
 import Image from "next/image";

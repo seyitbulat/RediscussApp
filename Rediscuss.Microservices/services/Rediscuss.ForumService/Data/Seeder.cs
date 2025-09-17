@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+﻿﻿using MongoDB.Bson;
 using MongoDB.Driver;
 using Rediscuss.ForumService.Entities;
 
@@ -28,13 +28,13 @@ namespace Rediscuss.ForumService.Data
 
             var permissions = new List<Permission>
             {
-                // Subredis Permissions
-                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "subredis:create", Description = "Yeni bir subredis oluşturma" },
-                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "subredis:follow", Description = "Bir subredis'i takip etme" },
-                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "subredis:unfollow", Description = "Bir subredis'i takipten çıkma" },
-                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "subredis:edit:own", Description = "Kendi subredis'ini düzenleme" },
-                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "subredis:delete:own", Description = "Kendi subredis'ini silme" },
-                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "subredis:delete:any", Description = "Herhangi bir subredis'i silme (Admin)" },
+                // Discuit Permissions
+                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "discuit:create", Description = "Yeni bir discuit oluşturma" },
+                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "discuit:follow", Description = "Bir discuit'i takip etme" },
+                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "discuit:unfollow", Description = "Bir discuit'i takipten çıkma" },
+                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "discuit:edit:own", Description = "Kendi discuit'ini düzenleme" },
+                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "discuit:delete:own", Description = "Kendi discuit'ini silme" },
+                new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "discuit:delete:any", Description = "Herhangi bir discuit'i silme (Admin)" },
 
                 // Post Permissions
                 new Permission { Id = ObjectId.GenerateNewId().ToString(), ActionName = "post:create", Description = "Yeni bir gönderi oluşturma" },
@@ -69,8 +69,8 @@ namespace Rediscuss.ForumService.Data
 
             var userPermissionNames = new List<string>
             {
-                "subredis:create", "subredis:follow", "subredis:unfollow",
-                "subredis:edit:own", "subredis:delete:own",
+                "discuit:create", "discuit:follow", "discuit:unfollow",
+                "discuit:edit:own", "discuit:delete:own",
                 "post:create", "post:vote",
                 "post:edit:own", "post:delete:own",
                 "comment:create", "comment:edit:own", "comment:delete:own"

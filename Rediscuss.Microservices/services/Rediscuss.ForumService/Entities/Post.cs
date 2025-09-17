@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
 namespace Rediscuss.ForumService.Entities
 {
@@ -24,7 +24,7 @@ namespace Rediscuss.ForumService.Entities
 
         //Iliskiler
         [BsonRepresentation(BsonType.ObjectId)]
-        public string SubredisId { get; set; }
+        public string DiscuitId { get; set; }
 
 
 
