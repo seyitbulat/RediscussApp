@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -144,7 +144,7 @@ namespace Rediscuss.ForumService.Controllers
 
 		[HttpGet("me/subscriptions")]
 		[Authorize(Roles = "Admin,User")]
-		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<SubredisDto>>>), StatusCodes.Status200OK)]
+		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<DiscuitDto>>>), StatusCodes.Status200OK)]
 		public async Task<IActionResult> GetMySubscriptions()
 		{
 			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
@@ -152,16 +152,16 @@ namespace Rediscuss.ForumService.Controllers
 
 			if (!subscriptions.Any())
 			{
-				return Ok(StandardApiResponse<List<JsonApiResource<SubredisDto>>>.Success(new List<JsonApiResource<SubredisDto>>()));
+				return Ok(StandardApiResponse<List<JsonApiResource<DiscuitDto>>>.Success(new List<JsonApiResource<DiscuitDto>>()));
 			}
 
-			var subredisIds = subscriptions.Select(s => s.SubredisId);
-			var subredises = await _context.Subredises.Find(s => subredisIds.Contains(s.Id) && s.IsDeleted == false).ToListAsync();
-			var resources = subredises.Select(s => new JsonApiResource<SubredisDto>
+			var discuitIds = subscriptions.Select(s => s.DiscuitId);
+			var discuits = await _context.Discuits.Find(s => discuitIds.Contains(s.Id) && s.IsDeleted == false).ToListAsync();
+			var resources = discuits.Select(s => new JsonApiResource<DiscuitDto>
 			{
-				Type = "subredises",
+				Type = "discuits",
 				Id = s.Id.ToString(),
-				Attributes = new SubredisDto
+				Attributes = new DiscuitDto
 				{
 					Id = s.Id,
 					Name = s.Name,
@@ -171,7 +171,7 @@ namespace Rediscuss.ForumService.Controllers
 				}
 			}).ToList();
 
-			return Ok(StandardApiResponse<List<JsonApiResource<SubredisDto>>>.Success(resources));
+			return Ok(StandardApiResponse<List<JsonApiResource<DiscuitDto>>>.Success(resources));
 		}
 	}
 }

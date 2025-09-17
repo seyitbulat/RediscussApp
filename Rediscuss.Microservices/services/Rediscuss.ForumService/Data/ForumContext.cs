@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+﻿﻿using MongoDB.Driver;
 using Rediscuss.ForumService.Entities;
 
 namespace Rediscuss.ForumService.Data
@@ -19,7 +19,7 @@ namespace Rediscuss.ForumService.Data
 
 
 
-        public IMongoCollection<Subredis> Subredises => _database.GetCollection<Subredis>("Subredises");
+        public IMongoCollection<Discuit> Discuits => _database.GetCollection<Discuit>("Discuits");
         public IMongoCollection<Post> Posts => _database.GetCollection<Post>("Posts");
         public IMongoCollection<Subscription> Subscriptions => _database.GetCollection<Subscription>("Subscriptions");
         public IMongoCollection<Comment> Comments => _database.GetCollection<Comment>("Comments");

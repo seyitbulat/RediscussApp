@@ -1,16 +1,16 @@
 'use client';
 
-import { followSubredis } from "@/lib/post";
+import { followDiscuit } from "@/lib/post";
 import { Button } from "./ui/button";
 import { BellIcon } from "lucide-react";
 
 interface JoinButtonProps{
-    subredisId: string
+    discuitId: string
 };
 
-export default function JoinButton({subredisId}:JoinButtonProps){
+export default function JoinButton({discuitId}:JoinButtonProps){
     const handleJoin = async () => {
-        followSubredis(subredisId);
+        followDiscuit(discuitId);
     }
 
     return (

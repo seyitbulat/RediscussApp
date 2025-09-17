@@ -1,8 +1,8 @@
-﻿namespace Rediscuss.ForumService.Entities.Lookup
+﻿﻿namespace Rediscuss.ForumService.Entities.Lookup
 {
     public class CommentWithDetails : Comment
     {
         public List<FormUser> FormUsers{ get; set; }
-        public List<Subredis> Subredises { get; set; }
+        public List<Discuit> Discuits { get; set; }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Rediscuss.ForumService.DTOs
 {
-    public class CreateSubredisDto
+    public class CreateDiscuitDto
     {
         [Required]
         public string Name { get; set; }

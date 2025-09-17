@@ -1,4 +1,4 @@
-﻿using MassTransit.Initializers;
+﻿﻿﻿using MassTransit.Initializers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -30,10 +30,10 @@ namespace Rediscuss.ForumService.Controllers
 		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
 		public async Task<IActionResult> CreatePost([FromBody] CreatePostDto createDto)
 		{
-			var subredisExists = await _context.Subredises.Find(s => s.Id == createDto.SubredisId && s.IsDeleted == false).AnyAsync();
-			if (subredisExists == false)
+			var discuitExists = await _context.Discuits.Find(s => s.Id == createDto.DiscuitId && s.IsDeleted == false).AnyAsync();
+			if (discuitExists == false)
 			{
-				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Post oluşturulmak istenen Subredis bulunamadı." };
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Post oluşturulmak istenen Discuit bulunamadı." };
 				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
 			}
 
@@ -42,7 +42,7 @@ namespace Rediscuss.ForumService.Controllers
 			{
 				Title = createDto.Title,
 				Content = createDto.Content,
-				SubredisId = createDto.SubredisId,
+				DiscuitId = createDto.DiscuitId,
 				CreatedBy = userId
 			};
 			await _context.Posts.InsertOneAsync(post);
@@ -94,25 +94,25 @@ namespace Rediscuss.ForumService.Controllers
 			return Ok(StandardApiResponse<object>.Success(null, meta: meta));
 		}
 
-		[HttpGet("GetBySubredis/{subredisId}")]
+		[HttpGet("GetByDiscuit/{discuitId}")]
 		[AllowAnonymous]
 		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<PostDto>>>), StatusCodes.Status200OK)]
 		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
-		public async Task<IActionResult> GetPostsForSubredis(string subredisId, [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
+		public async Task<IActionResult> GetPostsForDiscuit(string discuitId, [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
 		{
-			var subredisExists = await _context.Subredises.Find(s => s.Id == subredisId && s.IsDeleted == false).AnyAsync();
-			if (subredisExists == false)
+			var discuitExists = await _context.Discuits.Find(s => s.Id == discuitId && s.IsDeleted == false).AnyAsync();
+			if (discuitExists == false)
 			{
-				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Geçersiz Subredis ID." };
+				var error = new ApiError { Status = "404", Title = "Bulunamadı", Detail = "Geçersiz Discuit ID." };
 				return NotFound(StandardApiResponse<object>.Fail(new List<ApiError> { error }));
 			}
 
-			var filter = Builders<Post>.Filter.Eq(s => s.SubredisId, subredisId) & Builders<Post>.Filter.Eq(s => s.IsDeleted, false);
+			var filter = Builders<Post>.Filter.Eq(s => s.DiscuitId, discuitId) & Builders<Post>.Filter.Eq(s => s.IsDeleted, false);
 			var baseQuery = _context.Posts.Aggregate()
 				.Match(filter)
 				.SortByDescending(p => p.CreatedAt)
 				.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
-				.Lookup<PostWithDetails, Subredis, PostWithDetails>(_context.Subredises, p => p.SubredisId, s => s.Id, r => r.Subredises);
+				.Lookup<PostWithDetails, Discuit, PostWithDetails>(_context.Discuits, p => p.DiscuitId, s => s.Id, r => r.Discuits);
 
 			var countResult = await baseQuery.Count().FirstOrDefaultAsync();
 			long totalCount = countResult?.Count ?? 0;
@@ -130,7 +130,7 @@ namespace Rediscuss.ForumService.Controllers
 				var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
 				await Task.WhenAll(upvotesTask, downvotesTask);
 
-				var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Subredises.FirstOrDefault()?.Name);
+				var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Discuits.FirstOrDefault()?.Name);
 				return new JsonApiResource<PostDto> { Type = "posts", Id = p.Id, Attributes = dto };
 			});
 			var data = (await Task.WhenAll(tasks)).ToList();
@@ -174,7 +174,7 @@ namespace Rediscuss.ForumService.Controllers
 				.Match(filter)
 				.SortByDescending(p => p.CreatedAt)
 				.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
-				.Lookup<PostWithDetails, Subredis, PostWithDetails>(_context.Subredises, p => p.SubredisId, s => s.Id, r => r.Subredises);
+				.Lookup<PostWithDetails, Discuit, PostWithDetails>(_context.Discuits, p => p.DiscuitId, s => s.Id, r => r.Discuits);
 
 			var p = await baseQuery.FirstOrDefaultAsync();
 
@@ -183,10 +183,8 @@ namespace Rediscuss.ForumService.Controllers
 			var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
 			await Task.WhenAll(upvotesTask, downvotesTask);
 
-			var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Subredises.FirstOrDefault()?.Name);
+			var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Discuits.FirstOrDefault()?.Name);
 			var resource = new JsonApiResource<PostDto> { Type = "posts", Id = p.Id, Attributes = dto };
-
-
 
 			return Ok(StandardApiResponse<JsonApiResource<PostDto>>.Success(resource));
 		}
@@ -198,7 +196,7 @@ namespace Rediscuss.ForumService.Controllers
 			var allPostsWithDetails = await _context.Posts.Aggregate()
 		.Match(p => p.IsDeleted == false)
 		.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
-		.Lookup<PostWithDetails, Subredis, PostWithDetails>(_context.Subredises, p => p.SubredisId, s => s.Id, r => r.Subredises)
+		.Lookup<PostWithDetails, Discuit, PostWithDetails>(_context.Discuits, p => p.DiscuitId, s => s.Id, r => r.Discuits)
 		.ToListAsync();
 
 			var tasks = allPostsWithDetails.Select(async p =>
@@ -211,7 +209,7 @@ namespace Rediscuss.ForumService.Controllers
 				int upvotes = (int)await upvotesTask;
 				int downvotes = (int)await downvotesTask;
 
-				var dto = new PostDto(p, upvotes, downvotes, p.FormUsers.FirstOrDefault()?.Username, p.Subredises.FirstOrDefault()?.Name);
+				var dto = new PostDto(p, upvotes, downvotes, p.FormUsers.FirstOrDefault()?.Username, p.Discuits.FirstOrDefault()?.Name);
 				dto.HotScore = CalculateHotScore(upvotes, downvotes, p.CreatedAt.GetValueOrDefault());
 				return dto;
 			});
@@ -257,7 +255,7 @@ namespace Rediscuss.ForumService.Controllers
 				.Skip((page - 1) * pageSize)
 				.Limit(pageSize)
 				.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
-				.Lookup<PostWithDetails, Subredis, PostWithDetails>(_context.Subredises, p => p.SubredisId, s => s.Id, r => r.Subredises)
+				.Lookup<PostWithDetails, Discuit, PostWithDetails>(_context.Discuits, p => p.DiscuitId, s => s.Id, r => r.Discuits)
 				.ToListAsync();
 
 			var tasks = posts.Select(async p =>
@@ -267,7 +265,7 @@ namespace Rediscuss.ForumService.Controllers
 				var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
 				await Task.WhenAll(upvotesTask, downvotesTask);
 
-				var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Subredises.FirstOrDefault()?.Name);
+				var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Discuits.FirstOrDefault()?.Name);
 				return new JsonApiResource<PostDto> { Type = "posts", Id = p.Id, Attributes = dto };
 			});
 

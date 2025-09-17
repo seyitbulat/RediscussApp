@@ -1,18 +1,18 @@
 "use client";
 import { HomeIcon, MenuIcon } from "lucide-react";
-import SidebarSubredisList from "./SidebarSubredisList";
+import SidebarDiscuitsList from "./SidebarDiscuitsList";
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { SubredisDto } from "@/types/dto";
+import { DiscuitDto } from "@/types/dto";
 import { useSidebar } from "./providers/SidebarContext";
 import SidebarToggle from "./SidebarToggle";
-import CreateSubredis from "@/app/(main)/_components/CreateSubredis";
+import CreateDiscuit from "@/app/(main)/_components/CreateDiscuit";
 
 
 
 
 
-export default function SidebarClient({ subscriptions, recommendations }: { subscriptions: SubredisDto[] | null, recommendations: SubredisDto[] | null }) {
+export default function SidebarClient({ subscriptions, recommendations }: { subscriptions: DiscuitDto[] | null, recommendations: DiscuitDto[] | null }) {
     const { collapsed, toggle } = useSidebar();
     return (
         <div id="sidebar"
@@ -46,17 +46,17 @@ export default function SidebarClient({ subscriptions, recommendations }: { subs
             <div className="mt-4">
                 <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2 transition-opacity duration-200 ease-in-out group-data-[collapsed=true]:opacity-0">Öneriler</span>
                 <div className="my-1 h-px bg-secondary" role="separator" />
-                <SidebarSubredisList initialSubscriptions={recommendations} />
+                <SidebarDiscuitsList initialSubscriptions={recommendations} />
             </div>
 
             <div className="mt-4">
-                <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2 transition-opacity duration-200 ease-in-out group-data-[collapsed=true]:opacity-0">Subredises</span>
+                <span className="font-semibold text-lg text-sidebar-accent-foreground pl-2 transition-opacity duration-200 ease-in-out group-data-[collapsed=true]:opacity-0">Discuits</span>
                 <div className="my-1 h-px bg-secondary" role="separator" />
 
                 <div className="m-4">
-                    <CreateSubredis />
+                    <CreateDiscuit />
                 </div>
-                <SidebarSubredisList initialSubscriptions={subscriptions} />
+                <SidebarDiscuitsList initialSubscriptions={subscriptions} />
             </div>
         </div>
     );

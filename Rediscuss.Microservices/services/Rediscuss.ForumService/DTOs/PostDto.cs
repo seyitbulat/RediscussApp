@@ -1,4 +1,4 @@
-﻿using Rediscuss.ForumService.Entities;
+﻿﻿using Rediscuss.ForumService.Entities;
 
 namespace Rediscuss.ForumService.DTOs
 {
@@ -7,7 +7,7 @@ namespace Rediscuss.ForumService.DTOs
         public string Id { get; set; }
         public string Title { get; set; }
         public string? Content { get; set; }
-        public string SubredisId { get; set; }
+        public string DiscuitId { get; set; }
 
 
 
@@ -28,15 +28,15 @@ namespace Rediscuss.ForumService.DTOs
         public string CreatedByUserName { get; set; }
 
 
-        public string SubredisName { get; set; }
+        public string DiscuitName { get; set; }
 
 		public double HotScore { get; set; }
-		public PostDto(Post post, int upVotes, int downVotes, string createdByUserName, string subredisName)
+		public PostDto(Post post, int upVotes, int downVotes, string createdByUserName, string discuitName)
 		{
 			Id = post.Id;
 			Title = post.Title;
 			Content = post.Content;
-			SubredisId = post.SubredisId;
+			DiscuitId = post.DiscuitId;
 			CreatedAt = post.CreatedAt;
 			CreatedBy = post.CreatedBy;
 			UpdatedAt = post.UpdatedAt;
@@ -44,7 +44,7 @@ namespace Rediscuss.ForumService.DTOs
 			UpVotes = upVotes;
 			DownVotes = downVotes;
 			CreatedByUserName = createdByUserName;
-			SubredisName = subredisName;
+			DiscuitName = discuitName;
 		}
 
 	}

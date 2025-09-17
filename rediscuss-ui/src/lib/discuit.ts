@@ -1,15 +1,15 @@
 'use server';
 import { JsonApiResource, StandardApiResponse } from "@/types/api";
-import { PostDto, SubredisDto } from "@/types/dto"
+import { PostDto, DiscuitDto } from "@/types/dto"
 import { cookies } from "next/headers"
 
 
 
-export async function getSubredisByName(subredisName: string): Promise<SubredisDto | null> {
+export async function getDiscuitByName(discuitName: string): Promise<DiscuitDto | null> {
     try {
         const token = (await cookies()).get('token')?.value;
 
-        const response = await fetch(`${process.env.APi_BASE_URL}/forum/subredises/GetByName/${subredisName}`, {
+        const response = await fetch(`${process.env.APi_BASE_URL}/forum/discuits/GetByName/${discuitName}`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`
@@ -21,11 +21,11 @@ export async function getSubredisByName(subredisName: string): Promise<SubredisD
             return null;
         }
 
-        const data: StandardApiResponse<JsonApiResource<SubredisDto>> = await response.json();
+        const data: StandardApiResponse<JsonApiResource<DiscuitDto>> = await response.json();
 
-        const subredis = data.data?.attributes;
+        const discuit = data.data?.attributes;
 
-        return subredis || null;
+        return discuit || null;
     } catch (error) {
         return null;
     }
@@ -33,11 +33,11 @@ export async function getSubredisByName(subredisName: string): Promise<SubredisD
 
 
 
-export async function setSubredis(name: string, description?: string): Promise<SubredisDto | null> {
+export async function setDiscuit(name: string, description?: string): Promise<DiscuitDto | null> {
     try {
         const token = (await cookies()).get('token')?.value;
 
-        const response = await fetch(`${process.env.Api_BASE_URL}/forum/subredises`, {
+        const response = await fetch(`${process.env.Api_BASE_URL}/forum/discuits`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -51,10 +51,10 @@ export async function setSubredis(name: string, description?: string): Promise<S
             return null;
         }
 
-        const data: StandardApiResponse<JsonApiResource<SubredisDto>> = await response.json();
-        const subredis = data.data?.attributes;
+        const data: StandardApiResponse<JsonApiResource<DiscuitDto>> = await response.json();
+        const discuit = data.data?.attributes;
 
-        return subredis || null;
+        return discuit || null;
     } catch (error) {
         return null;
 
@@ -62,11 +62,11 @@ export async function setSubredis(name: string, description?: string): Promise<S
 }
 
 
-export async function followSubredis(subredisId: string): Promise<boolean> {
+export async function followDiscuit(discuitId: string): Promise<boolean> {
     try {
         const token = (await cookies()).get('token')?.value;
 
-        const response = await fetch(`${process.env.Api_BASE_URL}/forum/subredises/${subredisId}/follow`, {
+        const response = await fetch(`${process.env.Api_BASE_URL}/forum/discuits/${discuitId}/follow`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`

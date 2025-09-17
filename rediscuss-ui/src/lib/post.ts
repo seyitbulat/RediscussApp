@@ -9,12 +9,12 @@ interface FetchPostsPaginationResult {
   hasNextPage: boolean;
 }
 
-export async function getSubredisPosts(subredisId: string, options: { page: number, pageSize: number }): Promise<PostDto[] | null> {
+export async function getDiscuitPosts(discuitId: string, options: { page: number, pageSize: number }): Promise<PostDto[] | null> {
     try {
         const { page, pageSize } = options;
         const token = (await cookies()).get('token')?.value;
 
-        const response = await fetch(`${process.env.API_BASE_URL}/forum/posts/getbysubredisid/${subredisId}?page=${page}&pageSize=${pageSize}`, {
+        const response = await fetch(`${process.env.API_BASE_URL}/forum/posts/getbydiscuitid/${discuitId}?page=${page}&pageSize=${pageSize}`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`
@@ -29,10 +29,10 @@ export async function getSubredisPosts(subredisId: string, options: { page: numb
 
         const data: StandardApiResponse<JsonApiResource<PostDto>[]> = await response.json();
 
-        const subredisPosts = data.data?.map(s => s.attributes);
+        const discuitPosts = data.data?.map(s => s.attributes);
 
 
-        return subredisPosts || [];
+        return discuitPosts || [];
     } catch (error) {
         return null;
     }
@@ -74,9 +74,9 @@ export async function getHomeFeedPosts(options: { page: number, pageSize: number
 }
 
 
-export async function getPostsAction(subredisId: string, pageParam: number, pageSize: number = 5) {
+export async function getPostsAction(discuitId: string, pageParam: number, pageSize: number = 5) {
     const token = (await cookies()).get("token")?.value;
-    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/posts/getbysubredis/${subredisId}?page=${pageParam}&pageSize=${5}`, {
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/posts/getbydiscuit/${discuitId}?page=${pageParam}&pageSize=${5}`, {
         method: 'GET',
         headers: {
             Authorization: `Bearer ${token}`
@@ -102,7 +102,7 @@ export async function getPostsAction(subredisId: string, pageParam: number, page
 
 
 
-export async function setPostAction(title: string, content: string, subredisId: string) {
+export async function setPostAction(title: string, content: string, discuitId: string) {
     const token = (await cookies()).get("token")?.value;
 
     const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/posts`, {
@@ -111,7 +111,7 @@ export async function setPostAction(title: string, content: string, subredisId: 
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ title, content, subredisId })
+        body: JSON.stringify({ title, content, discuitId })
     });
 
     if (!apiResponse.ok) {
@@ -124,10 +124,10 @@ export async function setPostAction(title: string, content: string, subredisId: 
 }
 
 
-export async function followSubredis(subredisId: string) {
+export async function followDiscuit(discuitId: string) {
     const token = (await cookies()).get("token")?.value;
 
-    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/Subredises/${subredisId}/follow`, {
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/discuits/${discuitId}/follow`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

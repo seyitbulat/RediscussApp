@@ -9,20 +9,20 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { setSubredis } from "@/lib/subredis"
+import { setDiscuit } from "@/lib/discuit"
 import { PlusCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 
-export default function CreateSubredis() {
+export default function CreateDiscuit() {
     const [name, setName] = useState("")
     const [description, setDescription] = useState("")
     const [open, setOpen] = useState(false)
     const router = useRouter()
 
-    const handleAddSubredis = async () => {
-        const response = await setSubredis(name, description)
+    const handleAddDiscuit = async () => {
+        const response = await setDiscuit(name, description)
         if (response !== null) {
             setName("")
             setDescription("")
@@ -42,18 +42,18 @@ export default function CreateSubredis() {
                         <PlusCircle className="h-4 w-4" aria-hidden />
                     </span>
                     <span className="flex flex-col items-start leading-tight">
-                        <span>Subredis Oluştur</span>
+                        <span>Discuit Oluştur</span>
                         <span className="text-xs text-muted-foreground">Yeni bir topluluk başlat</span>
                     </span>
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Subredis Oluştur</DialogTitle>
+                    <DialogTitle>Discuit Oluştur</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <Input
-                        placeholder="Subredis adı..."
+                        placeholder="Discuit adı..."
                         value={name}
                         onChange={(e) => setName(e.currentTarget.value)}
                     />
@@ -65,7 +65,7 @@ export default function CreateSubredis() {
                     />
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleAddSubredis}>Oluştur</Button>
+                    <Button onClick={handleAddDiscuit}>Oluştur</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

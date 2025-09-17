@@ -12,7 +12,7 @@ export interface UserDto{
     createdAt: Date
 }
 
-export interface SubredisDto{
+export interface DiscuitDto{
     id: string,
     name?: string,
     description?: string,
@@ -27,13 +27,13 @@ export interface PostDto{
     id: string,
     title: string,
     content: string,
-    subredisId: string,
+    discuitId: string,
     upVotes: number,
     downVotes: number,
     createdBy: number,
     createdAt: Date,
     createdByUserName: string,
-    subredisName: string
+    discuitName: string
 }
 
 

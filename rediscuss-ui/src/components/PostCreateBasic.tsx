@@ -11,10 +11,10 @@ import { setPostAction } from "@/lib/post";
 
 
 interface PostCreateBasicProps {
-    subredisId?: string;
+    discuitId?: string;
 }
 
-export default function PostCreateBasic({ subredisId }: PostCreateBasicProps) {
+export default function PostCreateBasic({ discuitId }: PostCreateBasicProps) {
     const [expanded, setExpanded] = useState(false);
 
     const [title, setTitle] = useState("");
@@ -24,11 +24,11 @@ export default function PostCreateBasic({ subredisId }: PostCreateBasicProps) {
 
     const createPost = useMutation({
         mutationFn: async () => {
-            const response = setPostAction(title, content, subredisId || "");
+            const response = setPostAction(title, content, discuitId || "");
             return response;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['posts', subredisId] });
+            queryClient.invalidateQueries({ queryKey: ['posts', discuitId] });
             setTitle("");
             setContent("");
             setExpanded(false);
