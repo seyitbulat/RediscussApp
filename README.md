@@ -66,25 +66,16 @@
 > - Node.js (v18 or later recommended)
 > - Docker
 >
-> #### **1. Set Up the Development Environment**
+> #### **1. Set Up the Development Environment and Run the Backend Microservices**
 >
-> The project includes a `docker-compose.yml` file to easily set up the necessary infrastructure (SQL Server, MongoDB, Redis, and RabbitMQ).
+> The project includes a `docker-compose.yml` file to easily set up the necessary infrastructure (SQL Server, MongoDB, Redis, and RabbitMQ) also start the all backend servcices in the correct order.
 >
 > ```bash
 > cd Rediscuss.Microservices
 > docker-compose up -d
 > ```
 >
-> #### **2. Run the Backend Microservices**
->
-> A PowerShell script is provided to start all the backend services in the correct order.
->
-> ```powershell
-> # Make sure you are in the root directory of the project
-> ./startup.dev.ps1
-> ```
->
-> #### **3. Run the Frontend Application**
+> #### **2. Run the Frontend Application**
 >
 > Navigate to the `rediscuss-ui` directory to install dependencies and start the Next.js development server.
 >
