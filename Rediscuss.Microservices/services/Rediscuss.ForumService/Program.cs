@@ -23,7 +23,10 @@ builder.Services.AddMassTransit(config =>
 	config.AddConsumers(typeof(Program).Assembly);
 	config.UsingRabbitMq((ctx, cfg) =>
 	{
-		cfg.Host("localhost", "/", h => { h.Username("guest"); h.Password("guest"); });
+		var host = builder.Configuration.GetSection("RabbitMqConnection:Host").Value;
+		var username = builder.Configuration.GetSection("RabbitMqConnection:Username").Value;
+		var password = builder.Configuration.GetSection("RabbitMqConnection:Password").Value;
+		cfg.Host(host, "/", h => { h.Username(username); h.Password(password); });
 
 		cfg.ReceiveEndpoint("user-created-event-queue", e =>
 		{

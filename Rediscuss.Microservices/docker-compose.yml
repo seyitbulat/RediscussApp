@@ -34,13 +34,13 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-  
+
   mongo-express:
     image: mongo-express
     container_name: rediscuss-mongo-express
     restart: always
     ports:
-    - 8081:8081
+      - 8081:8081
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: String.123!
@@ -52,7 +52,50 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+  forum-service:
+    build:
+      context: .
+      dockerfile: ./services/Rediscuss.ForumService/Dockerfile
+    depends_on:
+      - rediscuss-mongo-db
+      - rediscuss-redis
+      - rabbitmq
+    environment:
+      - RabbitMqConnection__Host=rabbitmq
+      - RabbitMqConnection__Username=guest
+      - RabbitMqConnection__Password=guest
+      - RedisConnectionString=rediscuss-redis:6379
+      - MongoDbSettings__ConnectionString=mongodb://root:String.123!@rediscuss-mongo-db:27017
+    ports:
+      - "5012:8080"
 
+  identity-service:
+    build:
+      context: .
+      dockerfile: ./services/Rediscuss.IdentityService/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=rediscuss-mssql-db,1433;Database=RediscussIdentityDB;User Id=sa;Password=String.123!;Encrypt=True;TrustServerCertificate=True
+      - RabbitMqConnection__Host=rabbitmq
+      - RabbitMqConnection__Username=guest
+      - RabbitMqConnection__Password=guest
+    depends_on:
+      - rediscuss-mssql-db
+      - rabbitmq
+    ports:
+      - "5213:8080"
+
+  gateway-service:
+    build:
+      context: .
+      dockerfile: ./services/Rediscuss.ApiGateway/Dockerfile
+    environment:
+      - ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address=http://identity-service:8080
+      - ReverseProxy__Clusters__forum-cluster__Destinations__destination1__Address=http://forum-service:8080
+    depends_on:
+      - identity-service
+      - forum-service
+    ports:
+      - "5293:8080"
 volumes:
   mssql_data:
   mongo_data:

@@ -57,7 +57,7 @@
             "forum-cluster": {
                 "Destinations": {
                     "destination1": {
-                        "Address": "http://localhost:5012"
+                        "Address": "http://forum-service:8080"
                     }
                 },
                 "Metadata": {
