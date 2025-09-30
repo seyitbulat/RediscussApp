@@ -16,10 +16,10 @@ namespace Rediscuss.ForumService.DTOs
 
         public int UpVotes { get; set; }
         public int DownVotes { get; set; }
+		public int? MyVotes { get; set; }
 
 
-
-        public DateTime? CreatedAt { get; set; }
+		public DateTime? CreatedAt { get; set; }
         public int? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public int? UpdatedBy { get; set; }
@@ -31,7 +31,7 @@ namespace Rediscuss.ForumService.DTOs
         public string DiscuitName { get; set; }
 
 		public double HotScore { get; set; }
-		public PostDto(Post post, int upVotes, int downVotes, string createdByUserName, string discuitName)
+		public PostDto(Post post, int upVotes, int downVotes, string createdByUserName, string discuitName, int myVotes = 0)
 		{
 			Id = post.Id;
 			Title = post.Title;
@@ -45,6 +45,7 @@ namespace Rediscuss.ForumService.DTOs
 			DownVotes = downVotes;
 			CreatedByUserName = createdByUserName;
 			DiscuitName = discuitName;
+			MyVotes = myVotes;
 		}
 
 	}

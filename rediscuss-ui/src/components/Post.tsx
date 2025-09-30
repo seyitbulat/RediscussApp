@@ -24,9 +24,9 @@ export default function Post({ postDto, discuitId }: PostProps) {
             return res;
         },
         onMutate: async ({ postId, isUpvote }) => {
-            await queryClient.cancelQueries({ queryKey: ["posts", discuitId] });
-            const previous = queryClient.getQueryData<any>(["posts", discuitId]);
-            queryClient.setQueryData(["posts", discuitId], (oldData: any) => {
+            await queryClient.cancelQueries({ queryKey: ["posts", "home"] });
+            const previous = queryClient.getQueryData<any>(["posts", "home"]);
+            queryClient.setQueryData(["posts", "home"], (oldData: any) => {
                 if (!oldData) return oldData;
                 const pages = oldData.pages?.map((page: any) => ({
                     ...page,
@@ -50,7 +50,7 @@ export default function Post({ postDto, discuitId }: PostProps) {
         },
         onSuccess: (vote: Vote | undefined) => {
             if (!vote) return;
-            queryClient.setQueryData(["posts", discuitId], (oldData: any) => {
+            queryClient.setQueryData(["posts", "home"], (oldData: any) => {
                 if (!oldData) return oldData;
                 const pages = oldData.pages?.map((page: any) => ({
                     ...page,
@@ -88,11 +88,11 @@ export default function Post({ postDto, discuitId }: PostProps) {
                                 <BadgeCheck className="h-4 w-4 text-primary-500" />
                                 <span>•</span>
                                 {postDto.discuitName &&
-                                <Link href={`/d/${postDto.discuitName}`} className="hover:underline">
-                                    <span>{postDto.discuitName}</span>
-                                </Link>
-}
-                                
+                                    <Link href={`/d/${postDto.discuitName}`} className="hover:underline">
+                                        <span>{postDto.discuitName}</span>
+                                    </Link>
+                                }
+
                                 <span>•</span>
                                 <span>{relativeDate}</span>
                             </div>
@@ -116,14 +116,16 @@ export default function Post({ postDto, discuitId }: PostProps) {
                                 <LucideCookie className="w-5 h-5 group-hover/upVote:text-primary-400 transition-all" />
 
                                 <ArrowBigUp
-                                    className="absolute -top-1 -right-1 w-4 h-4 text-primary-400 transition-all opacity-0 translate-y-5
-                                    group-hover/upVote:opacity-100
-                                    group-hover/upVote:translate-y-0
-                                    "
+                                    className={`
+                                        absolute -top-1 -right-1 w-4 h-4 text-primary-400 transition-all opacity-0 translate-y-5
+                                        group-hover/upVote:opacity-100
+                                        group-hover/upVote:translate-y-0
+                                        ${postDto.myVotes === 1 ? "opacity-100 translate-y-0" : ""}
+                                        `}
                                 />
                             </Button>
 
-                            <span className="text-sm flex">{postDto.upVotes + postDto.downVotes}</span>
+                            <span className="text-sm flex">{postDto.upVotes - postDto.downVotes}</span>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -135,10 +137,12 @@ export default function Post({ postDto, discuitId }: PostProps) {
                                 <LucideCookie className="w-5 h-5 group-hover/downVote:text-accent-400 transition-all" />
 
                                 <ArrowBigDown
-                                    className="absolute -top-1 -right-1 w-4 h-4 text-accent-400 transition-all opacity-0 translate-y-0
+                                    className={`
+                                        absolute -top-1 -right-1 w-4 h-4 text-accent-400 transition-all opacity-0 translate-y-0
                                     group-hover/downVote:opacity-100
                                     group-hover/downVote:translate-y-5
-                                    "
+                                    ${postDto.myVotes === -1 ? "opacity-100 translate-y-5" : ""}
+                                    `}
                                 />
                             </Button>
                         </div>

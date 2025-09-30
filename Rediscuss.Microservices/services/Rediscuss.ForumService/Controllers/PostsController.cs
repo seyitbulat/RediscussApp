@@ -100,6 +100,8 @@ namespace Rediscuss.ForumService.Controllers
 		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
 		public async Task<IActionResult> GetPostsForDiscuit(string discuitId, [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
 		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
 			var discuitExists = await _context.Discuits.Find(s => s.Id == discuitId && s.IsDeleted == false).AnyAsync();
 			if (discuitExists == false)
 			{
@@ -125,12 +127,24 @@ namespace Rediscuss.ForumService.Controllers
 
 			var tasks = items.Select(async p =>
 			{
+				Task<RedisValue>? userPostVoteTask = null;
 				var voteKey = $"post:votes:{p.Id}";
+
 				var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
 				var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
-				await Task.WhenAll(upvotesTask, downvotesTask);
+
+				if(userId != 0)
+				{
+					var userVoteKey = $"post:uservotes:{p.Id}";
+					userPostVoteTask = _redisDb.HashGetAsync(userVoteKey, userId.ToString());
+
+				}
+
+				_ = userPostVoteTask == null ? await Task.WhenAll(upvotesTask, downvotesTask) : await Task.WhenAll(upvotesTask, downvotesTask, userPostVoteTask); ;
+
 
 				var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Discuits.FirstOrDefault()?.Name);
+				_ = userId != 0 ? dto.MyVotes = (int) await userPostVoteTask : null;
 				return new JsonApiResource<PostDto> { Type = "posts", Id = p.Id, Attributes = dto };
 			});
 			var data = (await Task.WhenAll(tasks)).ToList();
@@ -169,6 +183,8 @@ namespace Rediscuss.ForumService.Controllers
 		[ProducesResponseType(typeof(StandardApiResponse<object>), StatusCodes.Status404NotFound)]
 		public async Task<IActionResult> GetPost([FromRoute] string id)
 		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
 			var filter = Builders<Post>.Filter.Eq(s => s.Id, id) & Builders<Post>.Filter.Eq(s => s.IsDeleted, false);
 			var baseQuery = _context.Posts.Aggregate()
 				.Match(filter)
@@ -178,12 +194,20 @@ namespace Rediscuss.ForumService.Controllers
 
 			var p = await baseQuery.FirstOrDefaultAsync();
 
+			Task<RedisValue>? userPostVoteTask = null;
+
+
 			var voteKey = $"post:votes:{p.Id}";
 			var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
 			var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
-			await Task.WhenAll(upvotesTask, downvotesTask);
+
+			_ = userPostVoteTask == null ? await Task.WhenAll(upvotesTask, downvotesTask) : await Task.WhenAll(upvotesTask, downvotesTask, userPostVoteTask); ;
+
 
 			var dto = new PostDto(p, (int)await upvotesTask, (int)await downvotesTask, p.FormUsers.FirstOrDefault()?.Username, p.Discuits.FirstOrDefault()?.Name);
+
+			_ = userId != 0 ? dto.MyVotes = (int)await userPostVoteTask : null;
+
 			var resource = new JsonApiResource<PostDto> { Type = "posts", Id = p.Id, Attributes = dto };
 
 			return Ok(StandardApiResponse<JsonApiResource<PostDto>>.Success(resource));
@@ -193,6 +217,8 @@ namespace Rediscuss.ForumService.Controllers
 		[ProducesResponseType(typeof(StandardApiResponse<List<JsonApiResource<PostDto>>>), StatusCodes.Status200OK)]
 		public async Task<IActionResult> GetHomePageFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 25)
 		{
+			var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
 			var allPostsWithDetails = await _context.Posts.Aggregate()
 		.Match(p => p.IsDeleted == false)
 		.Lookup<Post, FormUser, PostWithDetails>(_context.FormUsers, p => p.CreatedBy, u => u.Id, r => r.FormUsers)
@@ -201,15 +227,27 @@ namespace Rediscuss.ForumService.Controllers
 
 			var tasks = allPostsWithDetails.Select(async p =>
 			{
+				Task<RedisValue>? userPostVoteTask = null;
+
 				var voteKey = $"post:votes:{p.Id}";
 				var upvotesTask = _redisDb.HashGetAsync(voteKey, "upvotes");
 				var downvotesTask = _redisDb.HashGetAsync(voteKey, "downvotes");
-				await Task.WhenAll(upvotesTask, downvotesTask);
+
+				if (userId != 0)
+				{
+					var userVoteKey = $"post:uservotes:{p.Id}";
+					userPostVoteTask = _redisDb.HashGetAsync(userVoteKey, userId.ToString());
+
+				}
+
+				_ = userPostVoteTask == null ? await Task.WhenAll(upvotesTask, downvotesTask) : await Task.WhenAll(upvotesTask, downvotesTask, userPostVoteTask); ;
+
 
 				int upvotes = (int)await upvotesTask;
 				int downvotes = (int)await downvotesTask;
 
 				var dto = new PostDto(p, upvotes, downvotes, p.FormUsers.FirstOrDefault()?.Username, p.Discuits.FirstOrDefault()?.Name);
+				_ = userId != 0 ? dto.MyVotes = (int)await userPostVoteTask : null;
 				dto.HotScore = CalculateHotScore(upvotes, downvotes, p.CreatedAt.GetValueOrDefault());
 				return dto;
 			});

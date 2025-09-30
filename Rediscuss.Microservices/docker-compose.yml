@@ -35,6 +35,16 @@ services:
     volumes:
       - redis_data:/data
 
+  rediscuss-redis-insight:
+    image: redislabs/redisinsight:latest   
+    container_name: rediscuss-redis-insight
+    depends_on:
+      - rediscuss-redis
+    ports:
+      - "5540:5540"       
+    volumes:
+      - redisinsight_data:/data  
+
   mongo-express:
     image: mongo-express
     container_name: rediscuss-mongo-express
@@ -100,3 +110,4 @@ volumes:
   mssql_data:
   mongo_data:
   redis_data:
+  redisinsight_data:

@@ -34,6 +34,7 @@ export interface PostDto{
     createdAt: Date,
     createdByUserName: string,
     discuitName: string
+    myVotes?: number
 }
 
 
