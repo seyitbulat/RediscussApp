@@ -12,10 +12,11 @@ import Link from "next/link";
 export interface PostProps {
     postDto: PostDto;
     discuitId: string;
+    queryKey: string[];
 }
 
 
-export default function Post({ postDto, discuitId }: PostProps) {
+export default function Post({ postDto, discuitId, queryKey}: PostProps) {
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
@@ -24,9 +25,9 @@ export default function Post({ postDto, discuitId }: PostProps) {
             return res;
         },
         onMutate: async ({ postId, isUpvote }) => {
-            await queryClient.cancelQueries({ queryKey: ["posts", "home"] });
-            const previous = queryClient.getQueryData<any>(["posts", "home"]);
-            queryClient.setQueryData(["posts", "home"], (oldData: any) => {
+            await queryClient.cancelQueries({ queryKey: queryKey });
+            const previous = queryClient.getQueryData<any>(queryKey);
+            queryClient.setQueryData(queryKey, (oldData: any) => {
                 if (!oldData) return oldData;
                 const pages = oldData.pages?.map((page: any) => ({
                     ...page,
@@ -45,12 +46,12 @@ export default function Post({ postDto, discuitId }: PostProps) {
         },
         onError: (_err, _vars, context) => {
             if (context?.previous) {
-                queryClient.setQueryData(["posts", discuitId], context.previous);
+                queryClient.setQueryData(queryKey, context.previous);
             }
         },
         onSuccess: (vote: Vote | undefined) => {
             if (!vote) return;
-            queryClient.setQueryData(["posts", "home"], (oldData: any) => {
+            queryClient.setQueryData(queryKey, (oldData: any) => {
                 if (!oldData) return oldData;
                 const pages = oldData.pages?.map((page: any) => ({
                     ...page,
@@ -63,7 +64,7 @@ export default function Post({ postDto, discuitId }: PostProps) {
             });
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ["posts", discuitId] });
+            queryClient.invalidateQueries({ queryKey: queryKey });
         },
     });
 
