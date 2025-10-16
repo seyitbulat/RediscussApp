@@ -62,23 +62,6 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-  forum-service:
-    build:
-      context: .
-      dockerfile: ./services/Rediscuss.ForumService/Dockerfile
-    depends_on:
-      - rediscuss-mongo-db
-      - rediscuss-redis
-      - rabbitmq
-    environment:
-      - RabbitMqConnection__Host=rabbitmq
-      - RabbitMqConnection__Username=guest
-      - RabbitMqConnection__Password=guest
-      - RedisConnectionString=rediscuss-redis:6379
-      - MongoDbSettings__ConnectionString=mongodb://root:String.123!@rediscuss-mongo-db:27017
-    ports:
-      - "5012:8080"
-
   identity-service:
     build:
       context: .
