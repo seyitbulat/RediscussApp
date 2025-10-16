@@ -458,7 +458,7 @@
   },
   "info": {
     "title": "Rediscuss Forum Api",
-    "description": "API for Rediscuss Forum Application",
+    "description": "Forum API for Rediscuss Application",
     "version": "1.0",
     "contact": {}
   },
