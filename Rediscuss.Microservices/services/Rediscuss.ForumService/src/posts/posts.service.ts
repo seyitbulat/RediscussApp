@@ -15,14 +15,13 @@ export class PostsService {
 
 
     async create(createPostDto: CreatePostDto, userId: string): Promise<GetPostDto> {
-        const post = {
-            ...createPostDto,
-            createdDate: new Date(),
-            createdBy: userId,
-            isDeleted: false
-        };
+        const post = new this.postModel(createPostDto);
+        post.createdBy = userId;
+        post.createdAt = new Date();
+        post.isDeleted = false;
+        post.discuit = createPostDto.discuitId;
 
-        const createdPost = await this.postModel.create(post);
+        const createdPost = await this.postModel.create(post).then(doc => doc.populate('createdBy').then(d => d.populate('discuit')));
         const plainPost = createdPost.toObject();
 
         return plainToInstance(GetPostDto, plainPost, {
@@ -36,7 +35,7 @@ export class PostsService {
         const post = await this.postModel
             .findOne({ _id: id, isDeleted: false })
             .populate('createdBy')
-            .populate('discuitId')
+            .populate('discuit')
             .exec();
 
         if (!post) return null;
@@ -63,9 +62,9 @@ export class PostsService {
         const pageNumber = typeof page === 'string' ? parseInt(page, 10) : page;
         const pageSizeNumber = typeof pageSize === 'string' ? parseInt(pageSize, 10) : pageSize;
 
-        const posts = await this.postModel.find({ discuitId: discuitId, isDeleted: false })
+        const posts = await this.postModel.find({ discuit: discuitId, isDeleted: false })
             .populate('createdBy')
-            .populate('discuitId')
+            .populate('discuit')
             .sort({ createdAt: -1 })
             .skip((pageNumber - 1) * pageSizeNumber)
             .limit(pageSizeNumber)
@@ -106,7 +105,7 @@ export class PostsService {
         const pageSizeNumber = typeof pageSize === 'string' ? parseInt(pageSize, 10) : pageSize;
         const posts = await this.postModel.find({ isDeleted: false })
             .populate('createdBy')
-            .populate('discuitId')
+            .populate('discuit')
             .sort({ createdAt: -1 })
             .skip((pageNumber - 1) * pageSizeNumber)
             .limit(pageSizeNumber)

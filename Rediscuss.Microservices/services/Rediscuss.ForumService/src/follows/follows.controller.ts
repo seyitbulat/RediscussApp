@@ -25,7 +25,7 @@ export class FollowsController {
     const follow = await this.followsService.create(createFollowDto);
     const resource = new JsonApiResource<GetFollowDto>({
       type: 'follow',
-      id: (follow._id ?? follow.id ?? '').toString(),
+      id: ( follow.id ?? '').toString(),
       attributes: follow as unknown as GetFollowDto,
     });
     return new ControllerResponseDto(resource);
@@ -38,7 +38,7 @@ export class FollowsController {
   @ApiBody({ type: RemoveFollowDto })
   @ApiOkResponse({ type: GetFollowDto })
   async unfollow(@Body() removeFollowDto: RemoveFollowDto, @GetUser() user: any): Promise<ControllerResponseDto<GetFollowDto>> {
-    removeFollowDto.userId = user.userId;
+    removeFollowDto.userId = user.userId.toString();
     const follow = await this.followsService.remove(removeFollowDto);
     const resource = new JsonApiResource<GetFollowDto>({
       type: 'follow',
@@ -55,11 +55,10 @@ export class FollowsController {
   @ApiParam({ name: 'userId', type: String })
   @ApiOkResponse({ type: GetFollowDto, isArray: true })
   async getUserFollows(@Param('userId') userId: string): Promise<ControllerResponseDto<GetFollowDto[]>> {
-    const userIdNum = Number(userId);
-    const follows = await this.followsService.getUserFollows(userIdNum);
+    const follows = await this.followsService.getUserFollows(userId);
     const resource = new JsonApiResource<GetFollowDto[]>({
       type: 'follows',
-      id: userId.toString(),
+      id: "",
       attributes: follows as unknown as GetFollowDto[],
     });
     return new ControllerResponseDto(resource);

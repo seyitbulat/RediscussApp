@@ -28,7 +28,7 @@ export class GetDiscuitDto {
         }
         return obj.createdBy;
     })
-    createdBy?: number;
+    createdBy?: string;
     
     @ApiProperty({ required: false, type: String, format: 'date-time' })
     @Expose()
@@ -42,7 +42,7 @@ export class GetDiscuitDto {
         }
         return obj.updatedBy;
     })
-    updatedBy?: number;
+    updatedBy?: string;
 
     @ApiProperty({ required: false })
     @Expose()

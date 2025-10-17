@@ -4,37 +4,40 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 
 
 @Schema({
-    versionKey: false,
-    timestamps: { createdAt: 'createdAt' }
+    versionKey: false
 })
 export class Follow {
 
     @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'Discuit' })
-    discuitId: string;
+    discuit: string;
 
     @Prop({ required: true, type: MongooseSchema.Types.Mixed, ref: 'User' })
-    userId: number;
+    user: string;
 
 
-
+    // Dates
     @Prop({ type: Date, default: Date.now })
     createdAt?: Date;
 
-    @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
-    createdBy?: number;
+    @Prop({ type: Date, default: null })
+    updatedAt?: string;
 
-    @Prop({ type: Date })
-    updatedAt?: Date;
-
-    @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
-    updatedBy?: number;
-
-    @Prop({ type: Date })
+    @Prop({ type: Date, default: null })
     deletedAt?: Date;
 
-    @Prop({ type: Number })
-    deletedBy?: number;
 
+    // User References
+    @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
+    createdBy?: string;
+
+    @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
+    updatedBy?: string;
+
+    @Prop({ type: MongooseSchema.Types.Mixed })
+    deletedBy?: string;
+
+
+    // Flags
     @Prop({ type: Boolean, default: false })
     isDeleted?: boolean;
 }

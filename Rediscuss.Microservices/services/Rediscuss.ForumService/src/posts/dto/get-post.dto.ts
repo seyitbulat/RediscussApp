@@ -1,4 +1,4 @@
-import { Expose, Transform, Type } from "class-transformer";
+import { Expose, plainToInstance, Transform, Type } from "class-transformer";
 import { GetUserDto } from "../../users/dto/get-user.dto";
 import { GetDiscuitDto } from "../../discuits/dto/get-discuit.dto";
 import { ApiProperty } from '@nestjs/swagger';
@@ -22,10 +22,7 @@ export class GetPostDto {
     @Expose()
     @Type(() => GetDiscuitDto)
     @Transform(({ obj }) => {
-        if (typeof obj.discuitId === 'object' && obj.discuitId !== null) {
-            return obj.discuitId;
-        }
-        return null;
+        return obj.discuit ? plainToInstance(GetDiscuitDto, obj.discuit, { excludeExtraneousValues: true }) : undefined;
     })
     discuit?: GetDiscuitDto;
 
@@ -52,7 +49,7 @@ export class GetPostDto {
         }
         return obj.updatedBy;
     })
-    updatedBy?: number;
+    updatedBy?: string;
 
     @ApiProperty({ required: false })
     @Expose()

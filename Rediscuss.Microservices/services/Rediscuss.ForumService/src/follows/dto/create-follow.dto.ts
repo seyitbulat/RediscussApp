@@ -5,5 +5,5 @@ export class CreateFollowDto {
     discuitId: string;
 
     @ApiProperty({ description: 'User id who follows' })
-    userId: number;
+    userId: string;
 }
