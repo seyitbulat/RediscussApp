@@ -1,0 +1,731 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/app/hehe": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "UsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create user (internal)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/discuits": {
+      "post": {
+        "operationId": "DiscuitsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDiscutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDiscuitDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a discuit (community)",
+        "tags": [
+          "discuits"
+        ]
+      }
+    },
+    "/discuits/recommended": {
+      "get": {
+        "operationId": "DiscuitsController_getRecommended",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GetDiscuitDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get recommended discuits for current user",
+        "tags": [
+          "discuits"
+        ]
+      }
+    },
+    "/discuits/{name}": {
+      "get": {
+        "operationId": "DiscuitsController_getByName",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDiscuitDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get discuit by name",
+        "tags": [
+          "discuits"
+        ]
+      }
+    },
+    "/follows": {
+      "post": {
+        "operationId": "FollowsController_follow",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFollowDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFollowDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Follow a discuit",
+        "tags": [
+          "follows"
+        ]
+      }
+    },
+    "/follows/unfollow": {
+      "post": {
+        "operationId": "FollowsController_unfollow",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveFollowDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFollowDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unfollow a discuit",
+        "tags": [
+          "follows"
+        ]
+      }
+    },
+    "/follows/user/{userId}": {
+      "get": {
+        "operationId": "FollowsController_getUserFollows",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GetFollowDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get follows for a user",
+        "tags": [
+          "follows"
+        ]
+      }
+    },
+    "/posts": {
+      "post": {
+        "operationId": "PostsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPostDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create post",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
+    "/posts/getByDiscuit/{discuitId}": {
+      "get": {
+        "operationId": "PostsController_getByDiscuit",
+        "parameters": [
+          {
+            "name": "discuitId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GetPostDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get posts by discuit",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
+    "/posts/homeFeed": {
+      "get": {
+        "operationId": "PostsController_getHomeFeed",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GetPostDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get home feed posts",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
+    "/posts/{id}": {
+      "get": {
+        "operationId": "PostsController_getById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPostDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get post by id",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
+    "/chips/vote": {
+      "post": {
+        "operationId": "ChipsController_voteChip",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteChipDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vote result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultChipDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Vote a post (chip up/down)",
+        "tags": [
+          "chips"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Rediscuss Forum Api",
+    "description": "Forum API for Rediscuss Application",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "rediscuss-forum",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Unique user id coming from auth service"
+          },
+          "username": {
+            "type": "string",
+            "description": "Username"
+          }
+        },
+        "required": [
+          "userId",
+          "username"
+        ]
+      },
+      "CreateDiscutDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "GetDiscuitDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "number"
+          },
+          "CreatedByUsername": {
+            "type": "string"
+          },
+          "UpdatedByUsername": {
+            "type": "string"
+          },
+          "followersCount": {
+            "type": "number"
+          },
+          "isFollowedByCurrentUser": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "CreateFollowDto": {
+        "type": "object",
+        "properties": {
+          "discuitId": {
+            "type": "string",
+            "description": "Discuit id to follow"
+          },
+          "userId": {
+            "type": "number",
+            "description": "User id who follows"
+          }
+        },
+        "required": [
+          "discuitId",
+          "userId"
+        ]
+      },
+      "GetFollowDto": {
+        "type": "object",
+        "properties": {
+          "discuitId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "discuit": {
+            "$ref": "#/components/schemas/GetDiscuitDto"
+          }
+        },
+        "required": [
+          "discuitId",
+          "userId",
+          "discuit"
+        ]
+      },
+      "RemoveFollowDto": {
+        "type": "object",
+        "properties": {
+          "discuitId": {
+            "type": "string",
+            "description": "Discuit id to unfollow"
+          },
+          "userId": {
+            "type": "number",
+            "description": "User id who unfollows"
+          }
+        },
+        "required": [
+          "discuitId",
+          "userId"
+        ]
+      },
+      "CreatePostDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "discuitId": {
+            "type": "string",
+            "description": "Discuit id for the post"
+          }
+        },
+        "required": [
+          "title",
+          "content",
+          "discuitId"
+        ]
+      },
+      "GetPostDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "discuit": {
+            "$ref": "#/components/schemas/GetDiscuitDto"
+          },
+          "createdBy": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "number"
+          },
+          "CreatedByUsername": {
+            "type": "string"
+          },
+          "UpdatedByUsername": {
+            "type": "string"
+          },
+          "discuitName": {
+            "type": "string"
+          },
+          "upChips": {
+            "type": "number"
+          },
+          "downChips": {
+            "type": "number"
+          },
+          "totalChips": {
+            "type": "number"
+          },
+          "chipByUser": {
+            "type": "number"
+          },
+          "hotScore": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "content",
+          "upChips",
+          "downChips",
+          "totalChips",
+          "hotScore"
+        ]
+      },
+      "VoteChipDto": {
+        "type": "object",
+        "properties": {
+          "postId": {
+            "type": "string",
+            "description": "Target post id"
+          },
+          "direction": {
+            "type": "number",
+            "enum": [
+              1,
+              -1
+            ],
+            "description": "1 for up, -1 for down"
+          }
+        },
+        "required": [
+          "postId",
+          "direction"
+        ]
+      },
+      "ResultChipDto": {
+        "type": "object",
+        "properties": {
+          "upVote": {
+            "type": "number"
+          },
+          "downVote": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "upVote",
+          "downVote"
+        ]
+      }
+    }
+  }
+}

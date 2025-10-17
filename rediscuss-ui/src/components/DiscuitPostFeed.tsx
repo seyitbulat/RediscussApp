@@ -65,7 +65,7 @@ export default function DiscuitPostFeed({ initialPosts, discuitId }: PostFeedPro
           const isLast = index === allPosts.length - 1;
           return (
             <li key={post.id} ref={isLast ? lastPostElementRef : null}>
-              <Post postDto={post} discuitId={discuitId} />
+              <Post postDto={post} discuitId={discuitId} queryKey={["posts", discuitId]}/>
             </li>
           );
         })}

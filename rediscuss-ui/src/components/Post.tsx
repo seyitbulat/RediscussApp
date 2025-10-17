@@ -12,10 +12,11 @@ import Link from "next/link";
 export interface PostProps {
     postDto: PostDto;
     discuitId: string;
+    queryKey: string[];
 }
 
 
-export default function Post({ postDto, discuitId }: PostProps) {
+export default function Post({ postDto, discuitId, queryKey}: PostProps) {
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
@@ -24,9 +25,9 @@ export default function Post({ postDto, discuitId }: PostProps) {
             return res;
         },
         onMutate: async ({ postId, isUpvote }) => {
-            await queryClient.cancelQueries({ queryKey: ["posts", discuitId] });
-            const previous = queryClient.getQueryData<any>(["posts", discuitId]);
-            queryClient.setQueryData(["posts", discuitId], (oldData: any) => {
+            await queryClient.cancelQueries({ queryKey: queryKey });
+            const previous = queryClient.getQueryData<any>(queryKey);
+            queryClient.setQueryData(queryKey, (oldData: any) => {
                 if (!oldData) return oldData;
                 const pages = oldData.pages?.map((page: any) => ({
                     ...page,
@@ -34,8 +35,8 @@ export default function Post({ postDto, discuitId }: PostProps) {
                         if (p.id !== postId) return p;
                         return {
                             ...p,
-                            upVotes: isUpvote ? p.upVotes + 1 : p.upVotes,
-                            downVotes: !isUpvote ? p.downVotes + 1 : p.downVotes,
+                            upChips: isUpvote ? p.upChips + 1 : p.upChips,
+                            downChips: !isUpvote ? p.downChips + 1 : p.downChips,
                         } as PostDto;
                     }),
                 }));
@@ -45,12 +46,12 @@ export default function Post({ postDto, discuitId }: PostProps) {
         },
         onError: (_err, _vars, context) => {
             if (context?.previous) {
-                queryClient.setQueryData(["posts", discuitId], context.previous);
+                queryClient.setQueryData(queryKey, context.previous);
             }
         },
         onSuccess: (vote: Vote | undefined) => {
             if (!vote) return;
-            queryClient.setQueryData(["posts", discuitId], (oldData: any) => {
+            queryClient.setQueryData(queryKey, (oldData: any) => {
                 if (!oldData) return oldData;
                 const pages = oldData.pages?.map((page: any) => ({
                     ...page,
@@ -63,7 +64,7 @@ export default function Post({ postDto, discuitId }: PostProps) {
             });
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ["posts", discuitId] });
+            queryClient.invalidateQueries({ queryKey: queryKey });
         },
     });
 
@@ -84,15 +85,15 @@ export default function Post({ postDto, discuitId }: PostProps) {
                         <div className="h-9 w-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-cyan-400 shadow-inner" />
                         <div>
                             <div className="flex flex-wrap items-center gap-1 text-sm text-text-500">
-                                <span className="font-medium">{postDto.createdByUserName}</span>
+                                <span className="font-medium">{postDto.createdByUsername}</span>
                                 <BadgeCheck className="h-4 w-4 text-primary-500" />
                                 <span>•</span>
-                                {postDto.discuitName &&
-                                <Link href={`/d/${postDto.discuitName}`} className="hover:underline">
-                                    <span>{postDto.discuitName}</span>
-                                </Link>
-}
-                                
+                                {postDto.discuit.name &&
+                                    <Link href={`/d/${postDto.discuit.name}`} className="hover:underline">
+                                        <span>{postDto.discuit.name}</span>
+                                    </Link>
+                                }
+
                                 <span>•</span>
                                 <span>{relativeDate}</span>
                             </div>
@@ -116,14 +117,16 @@ export default function Post({ postDto, discuitId }: PostProps) {
                                 <LucideCookie className="w-5 h-5 group-hover/upVote:text-primary-400 transition-all" />
 
                                 <ArrowBigUp
-                                    className="absolute -top-1 -right-1 w-4 h-4 text-primary-400 transition-all opacity-0 translate-y-5
-                                    group-hover/upVote:opacity-100
-                                    group-hover/upVote:translate-y-0
-                                    "
+                                    className={`
+                                        absolute -top-1 -right-1 w-4 h-4 text-primary-400 transition-all opacity-0 translate-y-5
+                                        group-hover/upVote:opacity-100
+                                        group-hover/upVote:translate-y-0
+                                        ${postDto.chipByUser === 1 ? "opacity-100 translate-y-0" : ""}
+                                        `}
                                 />
                             </Button>
 
-                            <span className="text-sm flex">{postDto.upVotes + postDto.downVotes}</span>
+                            <span className="text-sm flex">{postDto.upChips - postDto.downChips}</span>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -135,10 +138,12 @@ export default function Post({ postDto, discuitId }: PostProps) {
                                 <LucideCookie className="w-5 h-5 group-hover/downVote:text-accent-400 transition-all" />
 
                                 <ArrowBigDown
-                                    className="absolute -top-1 -right-1 w-4 h-4 text-accent-400 transition-all opacity-0 translate-y-0
+                                    className={`
+                                        absolute -top-1 -right-1 w-4 h-4 text-accent-400 transition-all opacity-0 translate-y-0
                                     group-hover/downVote:opacity-100
                                     group-hover/downVote:translate-y-5
-                                    "
+                                    ${postDto.chipByUser === -1 ? "opacity-100 translate-y-5" : ""}
+                                    `}
                                 />
                             </Button>
                         </div>
