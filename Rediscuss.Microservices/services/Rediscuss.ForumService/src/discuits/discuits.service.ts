@@ -59,7 +59,16 @@ export class DiscuitsService {
 
 
     async getRecommended(userId?: string): Promise<GetDiscuitDto[]> {
-        const discuits = await this.DiscuitModel.find({ isDeleted: false })
+        let query: any = { isDeleted: false };
+
+        if (userId) {
+            const followedDiscuitIds = await this.followsService.getUserFollowedDiscuitIds(userId);
+            if (followedDiscuitIds.length > 0) {
+                query._id = { $nin: followedDiscuitIds };
+            }
+        }
+
+        const discuits = await this.DiscuitModel.find(query)
             .sort({ followersCount: -1 })
             .limit(10)
             .populate('createdBy', 'username')
@@ -69,8 +78,7 @@ export class DiscuitsService {
         const discuitDtos = await Promise.all(discuits.map(async (discuit) => {
             const discuitDto = plainToClass(GetDiscuitDto, discuit.toObject(), { excludeExtraneousValues: true });
             if (userId) {
-                const isUserFollowingDiscuit = await this.followsService.isUserFollowingDiscuit(userId, discuit?._id.toString() || '');
-                discuitDto.isFollowedByCurrentUser = isUserFollowingDiscuit;
+                discuitDto.isFollowedByCurrentUser = false;
             }
             const followersCount = await this.followsService.getDiscuitFollowersCount(discuit?._id.toString() || '');
             discuitDto.followersCount = followersCount;

@@ -12,7 +12,7 @@ import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery
 @ApiTags('follows')
 @Controller('follows')
 export class FollowsController {
-  constructor(private readonly followsService: FollowsService) {}
+  constructor(private readonly followsService: FollowsService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -25,7 +25,7 @@ export class FollowsController {
     const follow = await this.followsService.create(createFollowDto);
     const resource = new JsonApiResource<GetFollowDto>({
       type: 'follow',
-      id: ( follow.id ?? '').toString(),
+      id: (follow.id ?? '').toString(),
       attributes: follow as unknown as GetFollowDto,
     });
     return new ControllerResponseDto(resource);
@@ -54,13 +54,17 @@ export class FollowsController {
   @ApiOperation({ summary: 'Get follows for a user' })
   @ApiParam({ name: 'userId', type: String })
   @ApiOkResponse({ type: GetFollowDto, isArray: true })
-  async getUserFollows(@Param('userId') userId: string): Promise<ControllerResponseDto<GetFollowDto[]>> {
-    const follows = await this.followsService.getUserFollows(userId);
-    const resource = new JsonApiResource<GetFollowDto[]>({
-      type: 'follows',
-      id: "",
-      attributes: follows as unknown as GetFollowDto[],
-    });
+  async getUserFollows(@Param('userId') userId: string, @GetUser() user: any): Promise<ControllerResponseDto<GetFollowDto>> {
+    const follows = await this.followsService.getUserFollows(user.userId.toString());
+    const resource = follows.map(follow => new JsonApiResource<GetFollowDto>({
+      type: 'follow',
+      id: (follow.id ?? '').toString(),
+      attributes: follow as unknown as GetFollowDto,
+    }));
+
+
     return new ControllerResponseDto(resource);
+
+
   }
 }

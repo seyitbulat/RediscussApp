@@ -26,7 +26,7 @@ export class GetPostDto {
     })
     discuit?: GetDiscuitDto;
 
-   
+
     @ApiProperty({ required: false, type: Number })
     @Expose()
     @Transform(({ obj }) => {
@@ -36,6 +36,10 @@ export class GetPostDto {
         return obj.createdBy;
     })
     createdBy?: number;
+
+    @ApiProperty({ required: false, type: String, format: 'date-time' })
+    @Expose()
+    createdAt?: Date;
 
     @ApiProperty({ required: false, type: String, format: 'date-time' })
     @Expose()
@@ -59,7 +63,7 @@ export class GetPostDto {
         }
         return undefined;
     })
-    CreatedByUsername?: string;
+    createdByUsername?: string;
 
     @ApiProperty({ required: false })
     @Expose()
@@ -69,13 +73,13 @@ export class GetPostDto {
         }
         return undefined;
     })
-    UpdatedByUsername?: string;
+    updatedByUsername?: string;
 
     @ApiProperty({ required: false })
     @Expose()
     @Transform(({ obj }) => {
-        if (typeof obj.discuitId === 'object' && obj.discuitId?.name) {
-            return obj.discuitId.name;
+        if (typeof obj.discuit === 'object' && obj.discuit?.name) {
+            return obj.discuit.name;
         }
         return undefined;
     })
@@ -97,7 +101,7 @@ export class GetPostDto {
     @ApiProperty({ required: false, type: Number })
     @Expose()
     chipByUser?: number;
-   
+
     @ApiProperty()
     @Expose()
     hotScore: number = 0;

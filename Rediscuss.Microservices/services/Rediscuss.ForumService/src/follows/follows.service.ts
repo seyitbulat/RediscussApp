@@ -53,6 +53,11 @@ export class FollowsService {
         return result;
     }
 
+    async getUserFollowedDiscuitIds(userId: string): Promise<string[]> {
+        const follows = await this.followModel.find({ user: userId, isDeleted: false }).select('discuit').exec();
+        return follows.map(follow => follow.discuit.toString());
+    }
+
 
     async getDiscuitFollowersCount(discuitId: string): Promise<number> {
         return this.followModel.countDocuments({ discuitId: discuitId, isDeleted: false }).exec();

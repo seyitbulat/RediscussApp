@@ -9,7 +9,7 @@ export async function getDiscuitByName(discuitName: string): Promise<DiscuitDto 
     try {
         const token = (await cookies()).get('token')?.value;
 
-        const response = await fetch(`${process.env.APi_BASE_URL}/forum/discuits/GetByName/${discuitName}`, {
+        const response = await fetch(`${process.env.APi_BASE_URL}/forum/discuits/${discuitName}`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`
@@ -66,11 +66,12 @@ export async function followDiscuit(discuitId: string): Promise<boolean> {
     try {
         const token = (await cookies()).get('token')?.value;
 
-        const response = await fetch(`${process.env.Api_BASE_URL}/forum/discuits/${discuitId}/follow`, {
+        const response = await fetch(`${process.env.Api_BASE_URL}/forum/follows`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`
             },
+            body: JSON.stringify({ discuitId }),
             cache: 'no-store'
         });
 
