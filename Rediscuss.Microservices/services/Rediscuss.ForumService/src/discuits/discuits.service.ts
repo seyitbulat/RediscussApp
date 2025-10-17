@@ -17,16 +17,19 @@ export class DiscuitsService {
     async create(createDiscuitDto: CreateDiscutDto, user?: any): Promise<GetDiscuitDto> {
         const discuit = {
             ...createDiscuitDto,
-            createdBy: user.userId,
+            createdBy: user.userId.toString(),
             createdDate: new Date()
         };
         const createdDiscuit = await this.DiscuitModel.create(discuit);
-        const result = plainToClass(GetDiscuitDto, createdDiscuit.toObject());
+
+        this.followsService.create({ userId: user.userId, discuitId: createdDiscuit._id.toString() });
+
+        const result = plainToClass(GetDiscuitDto, createdDiscuit.toObject(), { excludeExtraneousValues: true });
         result.CreatedByUsername = user.username;
         return result;
     }
 
-    async getByName(name: string, userId?: number): Promise<GetDiscuitDto> {
+    async getByName(name: string, userId?: string): Promise<GetDiscuitDto> {
         const discuit = await this.DiscuitModel.findOne({ name: name, isDeleted: false })
             .populate('createdBy', 'username')
             .populate('updatedBy', 'username')
@@ -38,11 +41,11 @@ export class DiscuitsService {
             throw new NotFoundException(`Discuit with name ${name} not found`);
         }
 
-        const discuitDto = plainToClass(GetDiscuitDto, discuit.toObject());
+        const discuitDto = plainToClass(GetDiscuitDto, discuit.toObject(), { excludeExtraneousValues: true });
 
         if (userId) {
 
-            const isUserFollowingDiscuit = await this.followsService.isUserFollowingDiscuit(userId || 0, discuit?._id.toString() || '');
+            const isUserFollowingDiscuit = await this.followsService.isUserFollowingDiscuit(userId, discuit?._id.toString() || '');
 
             discuitDto.isFollowedByCurrentUser = isUserFollowingDiscuit;
         }
@@ -55,8 +58,17 @@ export class DiscuitsService {
     }
 
 
-    async getRecommended(userId?: number): Promise<GetDiscuitDto[]> {
-        const discuits = await this.DiscuitModel.find({ isDeleted: false })
+    async getRecommended(userId?: string): Promise<GetDiscuitDto[]> {
+        let query: any = { isDeleted: false };
+
+        if (userId) {
+            const followedDiscuitIds = await this.followsService.getUserFollowedDiscuitIds(userId);
+            if (followedDiscuitIds.length > 0) {
+                query._id = { $nin: followedDiscuitIds };
+            }
+        }
+
+        const discuits = await this.DiscuitModel.find(query)
             .sort({ followersCount: -1 })
             .limit(10)
             .populate('createdBy', 'username')
@@ -64,10 +76,9 @@ export class DiscuitsService {
             .exec();
 
         const discuitDtos = await Promise.all(discuits.map(async (discuit) => {
-            const discuitDto = plainToClass(GetDiscuitDto, discuit.toObject());
+            const discuitDto = plainToClass(GetDiscuitDto, discuit.toObject(), { excludeExtraneousValues: true });
             if (userId) {
-                const isUserFollowingDiscuit = await this.followsService.isUserFollowingDiscuit(userId || 0, discuit?._id.toString() || '');
-                discuitDto.isFollowedByCurrentUser = isUserFollowingDiscuit;
+                discuitDto.isFollowedByCurrentUser = false;
             }
             const followersCount = await this.followsService.getDiscuitFollowersCount(discuit?._id.toString() || '');
             discuitDto.followersCount = followersCount;

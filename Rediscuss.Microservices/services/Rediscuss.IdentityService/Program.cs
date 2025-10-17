@@ -7,6 +7,7 @@ using Rediscuss.IdentityService.Data;
 using Rediscuss.Shared.Contracts;
 using Rediscuss.Shared.Contracts.Middlewares;
 using System.Security.Claims;
+using static Rediscuss.Shared.Contracts.UserContracts;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +20,9 @@ builder.Services.AddMassTransit(config =>
 		var username = builder.Configuration.GetSection("RabbitMqConnection:Username").Value;
 		var password = builder.Configuration.GetSection("RabbitMqConnection:Password").Value;
 		cfg.Host(host, "/", h => { h.Username(username); h.Password(password); });
-		cfg.ConfigureEndpoints(ctx);
+
+		cfg.Message<UserCreated>(x => x.SetEntityName("user-creation-queue"));
+
 	});
 });
 

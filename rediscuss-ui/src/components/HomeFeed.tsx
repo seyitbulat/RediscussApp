@@ -62,7 +62,7 @@ export default function HomePostFeed({ initialPosts }: {initialPosts: PostDto[]}
           const isLast = index === allPosts.length - 1;
           return (
             <li key={post.id} ref={isLast ? lastPostElementRef : null}>
-              <Post postDto={post} discuitId={post.discuitId} queryKey={["posts", "home"]}/>
+              <Post postDto={post} discuitId={post.discuit.id} queryKey={["posts", "home"]}/>
             </li>
           );
         })}

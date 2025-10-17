@@ -10,27 +10,33 @@ export class Post {
     @Prop({ required: true })
     content: string;
 
-    @Prop({ type: String, ref: 'Discuit' })
-    discuitId: string;
+    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Discuit' })
+    discuit: string;
 
-    @Prop({ type: Date, default: Date.now })
+
+    // Dates
+    @Prop({ type: Date, default: Date.now, required: true })
     createdAt: Date;
 
-    @Prop({ type: String, ref: 'User' })
-    createdBy?: string;
+    @Prop({ type: Date, default: null })
+    updatedAt?: string;
 
-    @Prop({ type: Date })
-    updatedAt?: Date;
-
-    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
-    updatedBy?: MongooseSchema.Types.ObjectId;
-
-    @Prop({ type: Date })
+    @Prop({ type: Date, default: null })
     deletedAt?: Date;
 
-    @Prop({ type: Number })
+
+    // User References
+    @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
+    createdBy?: string;
+
+    @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
+    updatedBy?: string;
+
+    @Prop({ type: MongooseSchema.Types.Mixed })
     deletedBy?: number;
 
+
+    // Flags
     @Prop({ type: Boolean, default: false })
     isDeleted?: boolean;
 }

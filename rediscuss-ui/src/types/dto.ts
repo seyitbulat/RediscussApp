@@ -17,9 +17,12 @@ export interface DiscuitDto{
     name?: string,
     description?: string,
     createdAt?: Date,
-    createdBy?: number
+    createdBy?: string
 
     createdByUsername?: string
+
+    followersCount?: number,
+    isFollowedByCurrentUser?: boolean
 }
 
 
@@ -27,14 +30,16 @@ export interface PostDto{
     id: string,
     title: string,
     content: string,
-    discuitId: string,
-    upVotes: number,
-    downVotes: number,
-    createdBy: number,
+    discuit: DiscuitDto,
+    upChips: number,
+    downChips: number,
+    totalChips?: number,
+    chipByUser?: number,
+    createdBy: string,
     createdAt: Date,
-    createdByUserName: string,
-    discuitName: string
-    myVotes?: number
+    createdByUsername: string,
+    discuitName: string,
+    hotScore?: number
 }
 
 
@@ -42,4 +47,13 @@ export interface PostDto{
 export interface Vote{
     upVotes: number,
     downVotes: number
+}
+
+
+
+export interface FollowDto{
+    id: string,
+    userId: string,
+    discuit: DiscuitDto,
+    createdAt: Date
 }

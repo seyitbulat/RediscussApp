@@ -1,13 +1,13 @@
 import 'server-only';
 
 import { JsonApiResource, StandardApiResponse } from "@/types/api";
-import { DiscuitDto, UserDto } from "@/types/dto";
+import { DiscuitDto, FollowDto, UserDto } from "@/types/dto";
 import { cookies } from "next/headers";
 
 export async function getSubscriptions(): Promise<DiscuitDto[] | null> {
     try {
         const token = (await cookies()).get('token')?.value;
-        const response = await fetch(`${process.env.API_BASE_URL}/forum/users/me/subscriptions`, {
+        const response = await fetch(`${process.env.API_BASE_URL}/forum/follows/user/0`, {
             method: 'GET',
             cache: 'no-store',
             headers: {
@@ -19,9 +19,10 @@ export async function getSubscriptions(): Promise<DiscuitDto[] | null> {
             return null;
         }
 
-        const data: StandardApiResponse<JsonApiResource<DiscuitDto>[]> = await response.json();
 
-        const discuits = data.data?.map(resource => resource.attributes);
+        const data: StandardApiResponse<JsonApiResource<FollowDto>[]> = await response.json();
+
+        const discuits = data.data?.map(resource => resource.attributes.discuit);
         if (!discuits) {
             return [];
         }
@@ -39,7 +40,7 @@ export async function getRecommendedDiscuits(): Promise<DiscuitDto[] | null>{
 
     try{
         const token = (await cookies()).get('token')?.value;
-        const response = await fetch(`${process.env.APi_BASE_URL}/forum/discuits/GetRecommendations`, {
+        const response = await fetch(`${process.env.API_BASE_URL}/forum/discuits/recommended`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`

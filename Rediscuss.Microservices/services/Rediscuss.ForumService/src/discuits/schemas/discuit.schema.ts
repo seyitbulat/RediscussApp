@@ -9,32 +9,41 @@ export type DiscuitDocument = HydratedDocument<Discuit>;
   timestamps: { createdAt: 'createdAt' }
 })
 export class Discuit {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   name: string;
 
   @Prop({ required: true })
   description: string;
+  
 
+
+  // Dates
   @Prop({ type: Date, default: Date.now })
   createdAt?: Date;
 
-  @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
-  createdBy?: number;
+  @Prop({ type: Date , default: null })
+  updatedAt?: string;
 
-  @Prop({ type: Date })
-  updatedAt?: Date;
-
-  @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
-  updatedBy?: number;
-
-  @Prop({ type: Date })
+   @Prop({ type: Date, default: null })
   deletedAt?: Date;
 
-  @Prop({ type: Number })
+
+  // User References
+  @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
+  createdBy?: string;
+
+  @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User' })
+  updatedBy?: string;
+
+  @Prop({ type: MongooseSchema.Types.Mixed })
   deletedBy?: number;
 
+
+  // Flags
   @Prop({ type: Boolean, default: false })
   isDeleted?: boolean;
 }
 
+
 export const DiscuitSchema = SchemaFactory.createForClass(Discuit);
+

@@ -35,8 +35,8 @@ export default function Post({ postDto, discuitId, queryKey}: PostProps) {
                         if (p.id !== postId) return p;
                         return {
                             ...p,
-                            upVotes: isUpvote ? p.upVotes + 1 : p.upVotes,
-                            downVotes: !isUpvote ? p.downVotes + 1 : p.downVotes,
+                            upChips: isUpvote ? p.upChips + 1 : p.upChips,
+                            downChips: !isUpvote ? p.downChips + 1 : p.downChips,
                         } as PostDto;
                     }),
                 }));
@@ -85,12 +85,12 @@ export default function Post({ postDto, discuitId, queryKey}: PostProps) {
                         <div className="h-9 w-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-cyan-400 shadow-inner" />
                         <div>
                             <div className="flex flex-wrap items-center gap-1 text-sm text-text-500">
-                                <span className="font-medium">{postDto.createdByUserName}</span>
+                                <span className="font-medium">{postDto.createdByUsername}</span>
                                 <BadgeCheck className="h-4 w-4 text-primary-500" />
                                 <span>•</span>
-                                {postDto.discuitName &&
-                                    <Link href={`/d/${postDto.discuitName}`} className="hover:underline">
-                                        <span>{postDto.discuitName}</span>
+                                {postDto.discuit.name &&
+                                    <Link href={`/d/${postDto.discuit.name}`} className="hover:underline">
+                                        <span>{postDto.discuit.name}</span>
                                     </Link>
                                 }
 
@@ -121,12 +121,12 @@ export default function Post({ postDto, discuitId, queryKey}: PostProps) {
                                         absolute -top-1 -right-1 w-4 h-4 text-primary-400 transition-all opacity-0 translate-y-5
                                         group-hover/upVote:opacity-100
                                         group-hover/upVote:translate-y-0
-                                        ${postDto.myVotes === 1 ? "opacity-100 translate-y-0" : ""}
+                                        ${postDto.chipByUser === 1 ? "opacity-100 translate-y-0" : ""}
                                         `}
                                 />
                             </Button>
 
-                            <span className="text-sm flex">{postDto.upVotes - postDto.downVotes}</span>
+                            <span className="text-sm flex">{postDto.upChips - postDto.downChips}</span>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -142,7 +142,7 @@ export default function Post({ postDto, discuitId, queryKey}: PostProps) {
                                         absolute -top-1 -right-1 w-4 h-4 text-accent-400 transition-all opacity-0 translate-y-0
                                     group-hover/downVote:opacity-100
                                     group-hover/downVote:translate-y-5
-                                    ${postDto.myVotes === -1 ? "opacity-100 translate-y-5" : ""}
+                                    ${postDto.chipByUser === -1 ? "opacity-100 translate-y-5" : ""}
                                     `}
                                 />
                             </Button>

@@ -1,4 +1,4 @@
-import { Expose, Transform, Type } from "class-transformer";
+import { Expose, plainToInstance, Transform, Type } from "class-transformer";
 import { GetUserDto } from "../../users/dto/get-user.dto";
 import { GetDiscuitDto } from "../../discuits/dto/get-discuit.dto";
 import { ApiProperty } from '@nestjs/swagger';
@@ -22,14 +22,11 @@ export class GetPostDto {
     @Expose()
     @Type(() => GetDiscuitDto)
     @Transform(({ obj }) => {
-        if (typeof obj.discuitId === 'object' && obj.discuitId !== null) {
-            return obj.discuitId;
-        }
-        return null;
+        return obj.discuit ? plainToInstance(GetDiscuitDto, obj.discuit, { excludeExtraneousValues: true }) : undefined;
     })
     discuit?: GetDiscuitDto;
 
-   
+
     @ApiProperty({ required: false, type: Number })
     @Expose()
     @Transform(({ obj }) => {
@@ -39,6 +36,10 @@ export class GetPostDto {
         return obj.createdBy;
     })
     createdBy?: number;
+
+    @ApiProperty({ required: false, type: String, format: 'date-time' })
+    @Expose()
+    createdAt?: Date;
 
     @ApiProperty({ required: false, type: String, format: 'date-time' })
     @Expose()
@@ -52,7 +53,7 @@ export class GetPostDto {
         }
         return obj.updatedBy;
     })
-    updatedBy?: number;
+    updatedBy?: string;
 
     @ApiProperty({ required: false })
     @Expose()
@@ -62,7 +63,7 @@ export class GetPostDto {
         }
         return undefined;
     })
-    CreatedByUsername?: string;
+    createdByUsername?: string;
 
     @ApiProperty({ required: false })
     @Expose()
@@ -72,13 +73,13 @@ export class GetPostDto {
         }
         return undefined;
     })
-    UpdatedByUsername?: string;
+    updatedByUsername?: string;
 
     @ApiProperty({ required: false })
     @Expose()
     @Transform(({ obj }) => {
-        if (typeof obj.discuitId === 'object' && obj.discuitId?.name) {
-            return obj.discuitId.name;
+        if (typeof obj.discuit === 'object' && obj.discuit?.name) {
+            return obj.discuit.name;
         }
         return undefined;
     })
@@ -100,7 +101,7 @@ export class GetPostDto {
     @ApiProperty({ required: false, type: Number })
     @Expose()
     chipByUser?: number;
-   
+
     @ApiProperty()
     @Expose()
     hotScore: number = 0;

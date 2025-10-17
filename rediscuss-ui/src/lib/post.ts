@@ -14,7 +14,7 @@ export async function getDiscuitPosts(discuitId: string, options: { page: number
         const { page, pageSize } = options;
         const token = (await cookies()).get('token')?.value;
 
-        const response = await fetch(`${process.env.API_BASE_URL}/forum/posts/getbydiscuitid/${discuitId}?page=${page}&pageSize=${pageSize}`, {
+        const response = await fetch(`${process.env.API_BASE_URL}/forum/posts/getByDiscuit/${discuitId}?page=${page}&pageSize=${pageSize}`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`
@@ -44,7 +44,7 @@ export async function getHomeFeedPosts(options: { page: number, pageSize: number
     const token = (await cookies()).get('token')?.value;
 
     try {
-        const response = await fetch(`${process.env.API_BASE_URL}/forum/posts/feed?page=${page}&pageSize=${pageSize}`, {
+        const response = await fetch(`${process.env.API_BASE_URL}/forum/posts/homefeed?page=${page}&pageSize=${pageSize}`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`
@@ -88,7 +88,6 @@ export async function getPostsAction(discuitId: string, pageParam: number, pageS
         throw new Error(apiResponse.statusText);
     }
 
-
     const data: StandardApiResponse<JsonApiResource<PostDto>[]> = await apiResponse.json();
     const posts = (data.data ?? []).map((r) => r.attributes);
     const totalPages = data?.meta?.totalPages ?? 0;
@@ -127,12 +126,13 @@ export async function setPostAction(title: string, content: string, discuitId: s
 export async function followDiscuit(discuitId: string) {
     const token = (await cookies()).get("token")?.value;
 
-    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/discuits/${discuitId}/follow`, {
+    const apiResponse = await fetch(`${process.env.Api_BASE_URL}/forum/follows`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({ discuitId })
     });
 
     if (!apiResponse.ok) {
@@ -150,7 +150,7 @@ export async function followDiscuit(discuitId: string) {
 export async function votePost(postId: string, isUpvote: boolean) {
     const token = (await cookies()).get("token")?.value;
 
-    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/votes/post`, {
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/chips/vote`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
