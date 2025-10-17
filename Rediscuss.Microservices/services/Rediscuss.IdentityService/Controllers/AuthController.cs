@@ -1,5 +1,6 @@
 ﻿using Azure;
 using MassTransit;
+using MassTransit.Transports;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -22,12 +23,15 @@ namespace Rediscuss.IdentityService.Controllers
 		private readonly IdentityContext _context;
 		private readonly IConfiguration _configuration;
 		private readonly IPublishEndpoint _publishEndpoint;
+		private readonly ISendEndpointProvider _sendEndpointProvider;
 
-		public AuthController(IdentityContext context, IConfiguration configuration, IPublishEndpoint publishEndpoint)
+
+		public AuthController(IdentityContext context, IConfiguration configuration, IPublishEndpoint publishEndpoint, ISendEndpointProvider sendEndpointProvider)
 		{
 			_context = context;
 			_configuration = configuration;
 			_publishEndpoint = publishEndpoint;
+			_sendEndpointProvider = sendEndpointProvider;
 		}
 
 		[HttpPost("register")]
@@ -81,7 +85,9 @@ namespace Rediscuss.IdentityService.Controllers
 
 			var successResponse = StandardApiResponse<JsonApiResource<UserDto>>.Success(resource, meta: meta);
 
-			await _publishEndpoint.Publish(new UserCreated(user.UserId, user.Username));
+			var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-creation-queue"));
+			await endpoint.Send(new UserCreated(user.UserId, user.Username));
+
 
 			return CreatedAtAction(nameof(Register), new { id = user.UserId }, successResponse);
 
