@@ -94,16 +94,3 @@
 >
 > - **`startup.local-dotnet.ps1`**: Starts all the .net backend microservices (include gateway and identity services).
 >
-
->
-> Navigate to the `rediscuss-ui` directory to install dependencies and start the Next.js development server.
->
-> ```bash
-> cd rediscuss-ui
-> npm install
-> npm run dev
-> ```
->
-> The application will be available at [http://localhost:3000](http://localhost:3000).
->
-> ---
