@@ -14,5 +14,6 @@ import { UsersModule } from '../users/users.module';
   ],
   controllers: [CommentsController],
   providers: [CommentsService],
+  exports: [CommentsService]
 })
 export class CommentsModule {}

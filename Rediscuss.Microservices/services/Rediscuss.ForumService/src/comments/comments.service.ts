@@ -45,4 +45,10 @@ export class CommentsService {
 
         return new PaginatedServiceResponseDto<GetCommentDto>(commentDtos, total, pageNumber, pageSizeNumber);
     }
+
+
+    async getCountByPost(postId: string): Promise<number>{
+        const commentCount = await this.CommentModel.countDocuments({postId: postId, isDeleted: false})
+        return commentCount;
+    }
 }

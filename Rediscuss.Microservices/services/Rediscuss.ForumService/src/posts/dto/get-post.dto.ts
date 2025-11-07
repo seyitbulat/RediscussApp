@@ -105,4 +105,9 @@ export class GetPostDto {
     @ApiProperty()
     @Expose()
     hotScore: number = 0;
+
+
+    @ApiProperty()
+    @Expose()
+    commentCount: number = 0;
 }

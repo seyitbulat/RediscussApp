@@ -7,11 +7,13 @@ import { GetPostDto } from './dto/get-post.dto';
 import { plainToInstance } from 'class-transformer';
 import { ChipsService } from '../chips/chips.service';
 import { PaginatedServiceResponseDto } from '../common/dto/paginated-service-response.dto';
+import { CommentsService } from '../comments/comments.service';
 
 @Injectable()
 export class PostsService {
     constructor(@InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
-        private readonly chipsService: ChipsService) { }
+        private readonly chipsService: ChipsService,
+        private readonly commentsService: CommentsService) { }
 
 
     async create(createPostDto: CreatePostDto, userId: string): Promise<GetPostDto> {
@@ -23,6 +25,7 @@ export class PostsService {
 
         const createdPost = await this.postModel.create(post).then(doc => doc.populate('createdBy').then(d => d.populate('discuit')));
         const plainPost = createdPost.toObject();
+        (plainPost as any).commentCount = await this.commentsService.getCountByPost(createdPost._id.toString());
 
         return plainToInstance(GetPostDto, plainPost, {
             excludeExtraneousValues: true,
@@ -50,6 +53,9 @@ export class PostsService {
             const chipByUser = await this.chipsService.getUserVote(id.toString(), userId);
             (plainPost as any).chipByUser = chipByUser;
         }
+
+        // add comment count
+        (plainPost as any).commentCount = await this.commentsService.getCountByPost(id);
 
         return plainToInstance(GetPostDto, plainPost, {
             excludeExtraneousValues: true,
@@ -91,6 +97,8 @@ export class PostsService {
                 plainPost.createdAt
             );
 
+            (plainPost as any).commentCount = await this.commentsService.getCountByPost(id);
+
             return plainToInstance(GetPostDto, plainPost, {
                 excludeExtraneousValues: true,
                 enableImplicitConversion: true
@@ -127,6 +135,8 @@ export class PostsService {
                 (plainPost as any).downChips,
                 plainPost.createdAt
             ); 
+            // add comment count
+            (plainPost as any).commentCount = await this.commentsService.getCountByPost(id);
             return plainToInstance(GetPostDto, plainPost, {
                 excludeExtraneousValues: true,
                 enableImplicitConversion: true
