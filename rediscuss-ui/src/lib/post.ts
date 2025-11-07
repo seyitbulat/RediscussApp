@@ -168,3 +168,54 @@ export async function votePost(postId: string, isUpvote: boolean) {
     return data.data?.attributes;
 
 }
+
+
+export async function getPostComments(postId: string) {
+    const token = (await cookies()).get('token')?.value;
+    try {
+        // Assumption: API exposes GET /forum/comments/post/{postId} returning list
+        const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/comments/getByPost/${postId}`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            cache: 'no-store'
+        });
+
+        if (!apiResponse.ok) {
+            return null;
+        }
+
+        const data: StandardApiResponse<JsonApiResource<any>[]> = await apiResponse.json();
+        const comments = (data.data ?? []).map(r => r.attributes);
+        return comments;
+    } catch (error) {
+        return null;
+    }
+}
+
+export async function setPostComment(postId: string, content: string, parentCommentId?: string | null) {
+    const token = (await cookies()).get('token')?.value;
+    try {
+        const body: any = { postId, content };
+        if (parentCommentId) body.parentCommentId = parentCommentId;
+
+        const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!apiResponse.ok) {
+            throw new Error(apiResponse.statusText);
+        }
+
+        const data: StandardApiResponse<JsonApiResource<any>> = await apiResponse.json();
+        return data.data?.attributes;
+    } catch (error) {
+        throw error;
+    }
+}

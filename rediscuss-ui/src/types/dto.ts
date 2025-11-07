@@ -39,7 +39,9 @@ export interface PostDto{
     createdAt: Date,
     createdByUsername: string,
     discuitName: string,
-    hotScore?: number
+    hotScore?: number,
+    commentCount?: number
+    comments?: CommentDto[]
 }
 
 
@@ -56,4 +58,15 @@ export interface FollowDto{
     userId: string,
     discuit: DiscuitDto,
     createdAt: Date
+}
+
+
+export interface CommentDto {
+    id: string;
+    postId: string;
+    content: string;
+    createdBy: string;
+    createdByUsername: string;
+    createdAt: Date;
+    parentCommentId?: string | null;
 }
