@@ -15,7 +15,7 @@ export class GetCommentDto {
     @Expose()
     @Transform(({obj}) => {
         if(typeof obj === 'object' && obj.parentCommentId != null){
-            return obj._id;
+            return obj.parentCommentId._id;
         }
         return null;
     })
