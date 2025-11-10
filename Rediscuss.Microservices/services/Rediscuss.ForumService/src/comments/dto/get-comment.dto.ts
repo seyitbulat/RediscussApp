@@ -23,6 +23,11 @@ export class GetCommentDto {
 
     @ApiProperty({ required: true, type: String })
     @Expose()
+    @Transform(({obj}) => {
+        if(typeof obj.postId === 'object'){
+            return obj.postId._id;
+        }
+    })
     postId: string;
 
     @ApiProperty({ required: false, type: String, format: 'date-time' })
