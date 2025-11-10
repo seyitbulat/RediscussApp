@@ -9,6 +9,8 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { votePost, setPostComment, getPostComments } from "@/lib/post";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Comment from "./Comment";
+import { CommentDto } from "@/types/dto";
 
 export interface PostProps {
     postDto: PostDto;
@@ -17,12 +19,10 @@ export interface PostProps {
 }
 
 
-export default function Post({ postDto, discuitId, queryKey }: PostProps) {
+export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
     const queryClient = useQueryClient();
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState("");
-    const [replyToId, setReplyToId] = useState<string | null>(null);
-    const [replyText, setReplyText] = useState("");
 
     const mutation = useMutation({
         mutationFn: async (params: { postId: string; isUpvote: boolean }) => {
@@ -78,6 +78,53 @@ export default function Post({ postDto, discuitId, queryKey }: PostProps) {
         mutation.mutate({ postId: postDto.id, isUpvote });
     };
 
+    // Comments may be embedded in the post DTO (server returns them with the post).
+    // If they are not present, fall back to lazy-loading via `getPostComments`.
+    const commentsQuery = useQuery({
+        queryKey: ["postComments", postDto.id],
+        queryFn: async () => {
+            const res = await getPostComments(postDto.id);
+            return res ?? [];
+        },
+        enabled: !postDto.comments,
+    });
+
+    const commentsList = postDto.comments ?? (commentsQuery.data ?? []);
+    const commentsCount = postDto.comments ? commentsList.length : (commentsQuery.data ? commentsQuery.data.length : (postDto.commentCount ?? 0));
+
+    // Debug logging to help diagnose why comments may not appear at runtime.
+    useEffect(() => {
+        try {
+            console.debug("Post component debug:", {
+                postId: postDto.id,
+                hasEmbeddedComments: Array.isArray(postDto.comments),
+                embeddedCommentsLength: postDto.comments ? postDto.comments.length : undefined,
+                commentCountField: postDto.commentCount,
+                commentsQuery: {
+                    enabled: !!(showComments && !postDto.comments),
+                    isLoading: commentsQuery.isLoading,
+                    isError: commentsQuery.isError,
+                    dataLength: commentsQuery.data ? commentsQuery.data.length : undefined,
+                },
+                commentsListLength: commentsList.length
+            });
+        } catch (e) {
+            console.debug("Post debug logging failed", e);
+        }
+    }, [showComments, postDto, commentsQuery.data]);
+
+    const commentMutation = useMutation({
+        mutationFn: async (payload: { text: string; parentCommentId?: string | null }) => {
+            return await setPostComment(postDto.id, payload.text, payload.parentCommentId);
+        },
+        onSuccess: () => {
+            setCommentText("");
+            // Invalidate the parent posts query so the updated post (with new commentCount/comments)
+            // is refetched. Also invalidate the per-post comments query in case we lazy-loaded them.
+            queryClient.invalidateQueries({ queryKey: queryKey });
+            queryClient.invalidateQueries({ queryKey: ["postComments", postDto.id] });
+        }
+    });
 
 
     const relativeDate = formatDistanceToNow(postDto.createdAt, { addSuffix: true, locale: tr }).replace("yaklaşık", "")
@@ -106,14 +153,11 @@ export default function Post({ postDto, discuitId, queryKey }: PostProps) {
                         </div>
                     </header>
 
-                    <h2 className="mt-3 font-semibold leading-tight">
-                        <Link href={`/post/${postDto.id}`} className="hover:">
-                            {postDto.title}
-                        </Link>
-                    </h2>
+                    <h2 className="mt-3 font-semibold leading-tight">{postDto.title}</h2>
                     <p className="line-clamp-3 mt-2 flex-grow">{postDto.content}</p>
 
                     <footer className="mt-4 flex">
+                        {/* Tasarım İyileştirmesi: Oylama butonları daha modern bir "pill" görünümüne kavuşturuldu. */}
                         <div className="flex h-9 items-center gap-1 rounded-full bg-secondary/50 px-1">
                             <Button
                                 type="button"
@@ -156,7 +200,54 @@ export default function Post({ postDto, discuitId, queryKey }: PostProps) {
                                 />
                             </Button>
                         </div>
+
+                        <div className="ml-3 flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowComments(s => !s)}
+                            >
+                                Yorumlar ({commentsCount})
+                            </Button>
+                        </div>
                     </footer>
+                    <div className="mt-3 px-4 pb-4">
+                        <div className="flex flex-col gap-3">
+                            {/* New comment form */}
+                            <div className="flex flex-col gap-2">
+                                <textarea
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    className="w-full rounded-md border p-2 text-sm"
+                                    rows={3}
+                                    placeholder="Yorumunuzu yazın..."
+                                />
+                                <div className="flex justify-end">
+                                    <Button
+                                        size="sm"
+                                        disabled={commentMutation.isPending || !commentText.trim()}
+                                        onClick={() => commentMutation.mutate({ text: commentText.trim(), parentCommentId: undefined })}
+                                    >Gönder</Button>
+                                </div>
+                            </div>
+
+                            {/* Comments list (top-level then replies) */}
+                            <div className="flex flex-col gap-2">
+                                {commentsQuery.isLoading && <div className="text-sm text-text-400">Yükleniyor...</div>}
+                                {!commentsQuery.isLoading && commentsList.length === 0 && <div className="text-sm text-text-400">Henüz yorum yok.</div>}
+                                {commentsList.filter((c: CommentDto) => !c.parentCommentId).map((comment: CommentDto) => (
+                                    <Comment
+                                        key={comment.id}
+                                        comment={comment}
+                                        allComments={commentsList}
+                                        postId={postDto.id}
+                                        queryKey={queryKey}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </article>
         </Card>

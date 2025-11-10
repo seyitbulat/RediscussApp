@@ -99,7 +99,27 @@ export async function getPostsAction(discuitId: string, pageParam: number, pageS
     };
 }
 
+export async function getPostById(postId: string) : Promise<PostDto | null>{
+    const token = (await cookies()).get('token')?.value;
 
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/forum/posts/${postId}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            cache: 'no-store'
+        }
+    });
+
+    if(!apiResponse.ok){
+        throw new Error(apiResponse.statusText);
+    }
+
+    const data: StandardApiResponse<JsonApiResource<PostDto>> = await apiResponse.json();
+
+    const post = data.data ? data.data.attributes : null;
+
+    return post;
+}
 
 export async function setPostAction(title: string, content: string, discuitId: string) {
     const token = (await cookies()).get("token")?.value;
