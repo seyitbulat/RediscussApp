@@ -33,7 +33,7 @@ export class CommentsService {
 
         const comments = await this.CommentModel.find({ postId: postId, isDeleted: false })
             .populate('createdBy')
-            .populate('parentCommentId', '_id')
+            .populate('parentCommentId')
             .sort({ createdAt: 1 })
             .skip((pageNumber - 1) * pageSizeNumber)
             .limit(pageSizeNumber)

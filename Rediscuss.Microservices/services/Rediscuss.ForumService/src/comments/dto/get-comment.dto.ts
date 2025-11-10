@@ -14,7 +14,7 @@ export class GetCommentDto {
     @ApiProperty({required: false, type: String})
     @Expose()
     @Transform(({obj}) => {
-        if(typeof obj === 'object'){
+        if(typeof obj === 'object' && obj.parentCommentId != null){
             return obj._id;
         }
         return null;
