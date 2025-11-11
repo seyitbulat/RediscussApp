@@ -3,17 +3,20 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Permission, PermissionDocument } from './permissions/schemas/permission.schema';
 import { Role } from './roles/schemas/role.schema';
+import { Topic } from './topics/schemas/topic.schema';
 
 @Injectable()
 export class SeedingService implements OnModuleInit {
     constructor(
         @InjectModel(Permission.name) private readonly permissionModel: Model<PermissionDocument>,
         @InjectModel(Role.name) private readonly roleModel: Model<Role>,
+        @InjectModel(Topic.name) private readonly topicModel : Model<Topic>
     ) { }
 
     async onModuleInit() {
         await this.seedPermissions();
         await this.seedRoles();
+        await this.seedTopics();
     }
 
     private async seedPermissions() {
@@ -87,5 +90,66 @@ export class SeedingService implements OnModuleInit {
         ]
 
         await this.roleModel.insertMany(roles);
+    }
+
+
+    private async seedTopics(){
+         const topicsInDb = await this.topicModel.estimatedDocumentCount();
+
+        if (topicsInDb > 0) {
+            return;
+        }
+
+      const topics = [
+        // 🧠 Teknoloji & Bilim
+        { name: "Artificial Intelligence", slug: "artificial-intelligence" },
+        { name: "Machine Learning", slug: "machine-learning" },
+        { name: "Deep Learning", slug: "deep-learning" },
+        { name: "Computer Vision", slug: "computer-vision" },
+        { name: "Natural Language Processing", slug: "nlp" },
+        { name: "Data Science", slug: "data-science" },
+        { name: "Cybersecurity", slug: "cybersecurity" },
+        { name: "Software Engineering", slug: "software-engineering" },
+        { name: "Web Development", slug: "web-development" },
+        { name: "Mobile Development", slug: "mobile-development" },
+        { name: "Cloud Computing", slug: "cloud-computing" },
+        { name: "DevOps", slug: "devops" },
+
+        // 💼 İş & Eğitim
+        { name: "Startups", slug: "startups" },
+        { name: "Entrepreneurship", slug: "entrepreneurship" },
+        { name: "Product Management", slug: "product-management" },
+        { name: "Finance", slug: "finance" },
+        { name: "Investing", slug: "investing" },
+        { name: "Career Advice", slug: "career-advice" },
+
+        // 🎨 Sanat & Yaratıcılık
+        { name: "Graphic Design", slug: "graphic-design" },
+        { name: "Photography", slug: "photography" },
+        { name: "Music Production", slug: "music-production" },
+        { name: "Writing", slug: "writing" },
+
+        // ⚽ Spor & Sağlık
+        { name: "Football", slug: "football" },
+        { name: "Basketball", slug: "basketball" },
+        { name: "Fitness", slug: "fitness" },
+        { name: "Nutrition", slug: "nutrition" },
+
+        // 🎮 Eğlence
+        { name: "Movies", slug: "movies" },
+        { name: "Gaming", slug: "gaming" },
+        { name: "Anime", slug: "anime" },
+        { name: "Books", slug: "books" },
+
+        // 🧩 Programlama Dilleri
+        { name: "JavaScript", slug: "javascript" },
+        { name: "TypeScript", slug: "typescript" },
+        { name: "Python", slug: "python" },
+        { name: "C#", slug: "csharp" },
+        { name: "Go", slug: "go" },
+        { name: "Rust", slug: "rust" }
+    ];
+
+        await this.topicModel.insertMany(topics);
     }
 }

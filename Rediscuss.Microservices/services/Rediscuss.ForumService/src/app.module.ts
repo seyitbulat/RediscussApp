@@ -20,6 +20,7 @@ import redisConfig from './config/redis.config';
 import rabbitmqConfig from './config/rabbitmq.config';
 import { envSchema } from './config/env.validation';
 import { CommentsModule } from './comments/comments.module';
+import { TopicsModule } from './topics/topics.module';
 
 
 @Module({
@@ -58,6 +59,7 @@ import { CommentsModule } from './comments/comments.module';
     PostsModule,
     ChipsModule,
     CommentsModule,
+    TopicsModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeedingService],
