@@ -110,4 +110,34 @@ export class GetPostDto {
     @ApiProperty()
     @Expose()
     commentCount: number = 0;
+
+    @ApiProperty({ required: false, type: [String] })
+    @Expose()
+    @Transform(({ obj }) => {
+        if (Array.isArray(obj.topics)) {
+            return obj.topics.map((topic: any) => {
+                if (typeof topic === 'object' && topic?.name) {
+                    return topic.name;
+                }
+                return topic;
+            });
+        }
+        return [];
+    })
+    topicNames?: string[];
+
+    @ApiProperty({ required: false, type: [String] })
+    @Expose()
+    @Transform(({ obj }) => {
+        if (Array.isArray(obj.topics)) {
+            return obj.topics.map((topic: any) => {
+                if (typeof topic === 'object' && topic?._id) {
+                    return topic._id.toString();
+                }
+                return topic?.toString();
+            });
+        }
+        return [];
+    })
+    topicIds?: string[];
 }

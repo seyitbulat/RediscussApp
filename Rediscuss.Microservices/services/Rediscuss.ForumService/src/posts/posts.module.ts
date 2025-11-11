@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 import { ChipsModule } from '../chips/chips.module';
 import { CommentsModule } from '../comments/comments.module';
+import { TopicsModule } from '../topics/topics.module';
 
 @Module({
   imports:[
@@ -14,7 +15,8 @@ import { CommentsModule } from '../comments/comments.module';
     AuthModule,
     UsersModule,
     ChipsModule,
-    CommentsModule
+    CommentsModule,
+    TopicsModule
   ],
   controllers: [PostsController],
   providers: [PostsService],

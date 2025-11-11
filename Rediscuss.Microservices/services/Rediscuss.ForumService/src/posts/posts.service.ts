@@ -22,8 +22,12 @@ export class PostsService {
         post.createdAt = new Date();
         post.isDeleted = false;
         post.discuit = createPostDto.discuitId;
+        post.topics = createPostDto.topicIds || [];
 
-        const createdPost = await this.postModel.create(post).then(doc => doc.populate('createdBy').then(d => d.populate('discuit')));
+        const createdPost = await this.postModel.create(post)
+            .then(doc => doc.populate('createdBy')
+                .then(d => d.populate('discuit')
+                    .then(p => p.populate('topics'))));
         const plainPost = createdPost.toObject();
         (plainPost as any).commentCount = await this.commentsService.getCountByPost(createdPost._id.toString());
 
@@ -39,6 +43,7 @@ export class PostsService {
             .findOne({ _id: id, isDeleted: false })
             .populate('createdBy')
             .populate('discuit')
+            .populate('topics')
             .exec();
 
         if (!post) return null;
@@ -71,6 +76,7 @@ export class PostsService {
         const posts = await this.postModel.find({ discuit: discuitId, isDeleted: false })
             .populate('createdBy')
             .populate('discuit')
+            .populate('topics')
             .sort({ createdAt: -1 })
             .skip((pageNumber - 1) * pageSizeNumber)
             .limit(pageSizeNumber)
@@ -114,6 +120,7 @@ export class PostsService {
         const posts = await this.postModel.find({ isDeleted: false })
             .populate('createdBy')
             .populate('discuit')
+            .populate('topics')
             .sort({ createdAt: -1 })
             .skip((pageNumber - 1) * pageSizeNumber)
             .limit(pageSizeNumber)
@@ -146,6 +153,63 @@ export class PostsService {
         return new PaginatedServiceResponseDto(postDtos.sort((a, b) => b.hotScore - a.hotScore), postCount, pageNumber, pageSizeNumber);
     }
 
+    async getByTopic(topicId: string, page: number = 1, pageSize: number = 10, userId: number | undefined, sortBy: 'hot' | 'new' | 'top' = 'hot'): Promise<PaginatedServiceResponseDto<GetPostDto>> {
+        const pageNumber = typeof page === 'string' ? parseInt(page, 10) : page;
+        const pageSizeNumber = typeof pageSize === 'string' ? parseInt(pageSize, 10) : pageSize;
+
+        const posts = await this.postModel.find({ topics: topicId, isDeleted: false })
+            .populate('createdBy')
+            .populate('discuit')
+            .populate('topics')
+            .sort({ createdAt: -1 })
+            .skip((pageNumber - 1) * pageSizeNumber)
+            .limit(pageSizeNumber)
+            .exec();
+
+        const postCount = await this.postModel.countDocuments({ topics: topicId, isDeleted: false });
+
+        const postDtos = await Promise.all(posts.map(async post => {
+            const id = post._id.toString();
+            const plainPost = post.toObject();
+            const chips = await this.chipsService.getVoteResult(id.toString());
+            (plainPost as any).upChips = chips.upVote;
+            (plainPost as any).downChips = chips.downVote;
+
+            if (userId) {
+                const chipByUser = await this.chipsService.getUserVote(id.toString(), userId);
+                (plainPost as any).chipByUser = chipByUser;
+            }
+
+            (plainPost as any).hotScore = await this.calculateHotScore(
+                (plainPost as any).upChips,
+                (plainPost as any).downChips,
+                plainPost.createdAt
+            );
+
+            (plainPost as any).commentCount = await this.commentsService.getCountByPost(id);
+
+            return plainToInstance(GetPostDto, plainPost, {
+                excludeExtraneousValues: true,
+                enableImplicitConversion: true
+            });
+        }));
+
+        // Sort based on sortBy parameter
+        let sortedPosts = postDtos;
+        if (sortBy === 'hot') {
+            sortedPosts = postDtos.sort((a, b) => b.hotScore - a.hotScore);
+        } else if (sortBy === 'top') {
+            sortedPosts = postDtos.sort((a, b) => b.totalChips - a.totalChips);
+        } else if (sortBy === 'new') {
+            sortedPosts = postDtos.sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
+        }
+
+        return new PaginatedServiceResponseDto(sortedPosts, postCount, pageNumber, pageSizeNumber);
+    }
 
 
     async calculateHotScore(upChips: number, downChips: number, createdAt: Date): Promise<number> {

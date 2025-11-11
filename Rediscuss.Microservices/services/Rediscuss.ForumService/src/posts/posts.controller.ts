@@ -106,6 +106,51 @@ export class PostsController {
 
 
   @UseGuards(OptionalJwtAuthGuard)
+  @Get('getByTopic/:topicId')
+  @ApiOperation({ summary: 'Get posts by topic' })
+  @ApiParam({ name: 'topicId', type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['hot', 'new', 'top'], description: 'Sort posts by hot score, newest first, or top voted' })
+  @ApiOkResponse({ type: GetPostDto, isArray: true })
+  async getByTopic(
+    @Param('topicId') topicId: string,
+    @Query('page') page: number,
+    @Query('pageSize') pageSize: number,
+    @Query('sortBy') sortBy: 'hot' | 'new' | 'top' = 'hot',
+    @GetUser() user: any
+  ): Promise<ControllerResponseDto<GetPostDto>> {
+    const posts = await this.postsService.getByTopic(topicId, page, pageSize, user?.userId, sortBy);
+    const resources = posts.data.map(post => new JsonApiResource<GetPostDto>({
+      type: 'post',
+      id: (post.id ?? '').toString(),
+      attributes: post as unknown as GetPostDto,
+    }));
+
+    const meta = {
+      total: posts.total.toString(),
+      page: posts.page.toString(),
+      pageSize: posts.pageSize.toString(),
+      totalPages: posts.totalPages.toString(),
+      hasNextPage: posts.hasNextPage.toString(),
+      hasPreviousPage: posts.hasPreviousPage.toString(),
+      nextPage: posts.nextPage !== null ? posts.nextPage.toString() : '',
+      previousPage: posts.previousPage !== null ? posts.previousPage.toString() : '',
+      sortBy: sortBy,
+    };
+
+    const links = {
+      self: `/posts/getByTopic/${topicId}?page=${meta.page}&pageSize=${meta.pageSize}&sortBy=${sortBy}`,
+      first: `/posts/getByTopic/${topicId}?page=1&pageSize=${meta.pageSize}&sortBy=${sortBy}`,
+      last: `/posts/getByTopic/${topicId}?page=${meta.totalPages}&pageSize=${meta.pageSize}&sortBy=${sortBy}`,
+      next: posts.hasNextPage ? `/posts/getByTopic/${topicId}?page=${meta.nextPage}&pageSize=${meta.pageSize}&sortBy=${sortBy}` : null,
+      previous: posts.hasPreviousPage ? `/posts/getByTopic/${topicId}?page=${meta.previousPage}&pageSize=${meta.pageSize}&sortBy=${sortBy}` : null,
+    };
+
+    return new ControllerResponseDto(resources, meta, links);
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
   @ApiOperation({ summary: 'Get post by id' })
   @ApiParam({ name: 'id', type: String })

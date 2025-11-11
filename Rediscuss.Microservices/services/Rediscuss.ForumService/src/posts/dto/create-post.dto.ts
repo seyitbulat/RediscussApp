@@ -9,4 +9,7 @@ export class CreatePostDto{
 
     @ApiProperty({ description: 'Discuit id for the post' })
     discuitId: string;
+
+    @ApiProperty({ description: 'Topic ids for the post', type: [String], required: false })
+    topicIds?: string[];
 }

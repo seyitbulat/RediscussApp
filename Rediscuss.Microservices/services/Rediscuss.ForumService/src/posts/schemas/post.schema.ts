@@ -13,6 +13,9 @@ export class Post {
     @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Discuit' })
     discuit: string;
 
+    @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Topic' }], default: [] })
+    topics: string[];
+
 
     // Dates
     @Prop({ type: Date, default: Date.now, required: true })
