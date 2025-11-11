@@ -14,28 +14,29 @@ export class ChipsService {
         const userVoteKey = `post:uservotes:${postId}`;
 
         const existingVote = await this.redisClient.hget(userVoteKey, userId.toString());
-        if (existingVote) {
-            const voteValue = parseInt(existingVote, 10);
+        const currentVote = existingVote ? parseInt(existingVote, 10) : 0;
 
-            if (voteValue === direction) {
-                await this.redisClient.hset(userVoteKey, userId.toString(), 0);
-                if (direction === 1) {
-                    await this.redisClient.hincrby(postVoteKey, 'upVote', -1);
-                } else {
-                    await this.redisClient.hincrby(postVoteKey, 'downVote', -1);
-                }
-
-            } else if (voteValue != direction) {
-                await this.redisClient.hset(userVoteKey, userId.toString(), direction);
-                if (direction === 1) {
-                    await this.redisClient.hincrby(postVoteKey, 'upVote', 1);
-                    await this.redisClient.hincrby(postVoteKey, 'downVote', -1);
-                } else {
-                    await this.redisClient.hincrby(postVoteKey, 'downVote', 1);
-                    await this.redisClient.hincrby(postVoteKey, 'upVote', -1);
-                }
+        // Aynı oyu tekrar veriyorsa, oyu geri al
+        if (currentVote === direction) {
+            await this.redisClient.hset(userVoteKey, userId.toString(), 0);
+            if (direction === 1) {
+                await this.redisClient.hincrby(postVoteKey, 'upVote', -1);
+            } else {
+                await this.redisClient.hincrby(postVoteKey, 'downVote', -1);
             }
-        }else{
+        }
+        else if (currentVote !== 0 && currentVote !== direction) {
+            await this.redisClient.hset(userVoteKey, userId.toString(), direction);
+            if (direction === 1) {
+                await this.redisClient.hincrby(postVoteKey, 'upVote', 1);
+                await this.redisClient.hincrby(postVoteKey, 'downVote', -1);
+            } else {
+                await this.redisClient.hincrby(postVoteKey, 'downVote', 1);
+                await this.redisClient.hincrby(postVoteKey, 'upVote', -1);
+            }
+        }
+        // Hiç oy vermemişse veya önceden geri almışsa, yeni oy ver
+        else if (currentVote === 0) {
             await this.redisClient.hset(userVoteKey, userId.toString(), direction);
             if (direction === 1) {
                 await this.redisClient.hincrby(postVoteKey, 'upVote', 1);
