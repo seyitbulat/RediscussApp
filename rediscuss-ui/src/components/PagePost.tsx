@@ -22,6 +22,14 @@ export interface PostProps {
 export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
     const queryClient = useQueryClient();
     const [commentText, setCommentText] = useState("");
+    
+    // Local state for optimistic updates
+    const [localPost, setLocalPost] = useState<PostDto>(postDto);
+
+    // Sync localPost when postDto prop changes (e.g., from React Query updates)
+    useEffect(() => {
+        setLocalPost(postDto);
+    }, [postDto]);
 
     const mutation = useMutation({
         mutationFn: async (params: { postId: string; isUpvote: boolean }) => {
@@ -29,52 +37,94 @@ export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
             return res;
         },
         onMutate: async ({ postId, isUpvote }) => {
+            // Cancel any outgoing refetches
             await queryClient.cancelQueries({ queryKey: queryKey });
-            const previous = queryClient.getQueryData<any>(queryKey);
-            queryClient.setQueryData(queryKey, (oldData: any) => {
-                if (!oldData) return oldData;
-                const pages = oldData.pages?.map((page: any) => ({
-                    ...page,
-                    posts: (page.posts || []).map((p: PostDto) => {
-                        if (p.id !== postId) return p;
-                        return {
-                            ...p,
-                            upChips: isUpvote ? p.upChips + 1 : p.upChips,
-                            downChips: !isUpvote ? p.downChips + 1 : p.downChips,
-                        } as PostDto;
-                    }),
-                }));
-                return { ...oldData, pages };
-            });
+            
+            // Snapshot the previous value from cache
+            const previous = queryClient.getQueryData<PostDto>(queryKey);
+            
+            // Calculate new vote values
+            let upChips = localPost.upChips;
+            let downChips = localPost.downChips;
+            let newChipByUser = localPost.chipByUser;
+
+            if (localPost.chipByUser === 1) {
+                // Kullanıcı daha önce upvote vermiş
+                if (isUpvote) {
+                    // Tekrar upvote'a basıyor -> geri al
+                    upChips -= 1;
+                    newChipByUser = 0;
+                } else {
+                    // Downvote'a basıyor -> upvote'u kaldır, downvote ekle
+                    upChips -= 1;
+                    downChips += 1;
+                    newChipByUser = -1;
+                }
+            } else if (localPost.chipByUser === -1) {
+                // Kullanıcı daha önce downvote vermiş
+                if (isUpvote) {
+                    // Upvote'a basıyor -> downvote'u kaldır, upvote ekle
+                    downChips -= 1;
+                    upChips += 1;
+                    newChipByUser = 1;
+                } else {
+                    // Tekrar downvote'a basıyor -> geri al
+                    downChips -= 1;
+                    newChipByUser = 0;
+                }
+            } else {
+                // Kullanıcı daha önce oy vermemiş
+                if (isUpvote) {
+                    upChips += 1;
+                    newChipByUser = 1;
+                } else {
+                    downChips += 1;
+                    newChipByUser = -1;
+                }
+            }
+
+            const updatedPost = {
+                ...localPost,
+                upChips,
+                downChips,
+                chipByUser: newChipByUser,
+            };
+
+            // Update local state
+            setLocalPost(updatedPost);
+            
+            // Optimistically update React Query cache
+            queryClient.setQueryData(queryKey, updatedPost);
+            
             return { previous };
         },
         onError: (_err, _vars, context) => {
+            // Rollback on error
             if (context?.previous) {
+                setLocalPost(context.previous);
                 queryClient.setQueryData(queryKey, context.previous);
             }
         },
         onSuccess: (vote: Vote | undefined) => {
+            // Update with server response
             if (!vote) return;
-            queryClient.setQueryData(queryKey, (oldData: any) => {
-                if (!oldData) return oldData;
-                const pages = oldData.pages?.map((page: any) => ({
-                    ...page,
-                    posts: (page.posts || []).map((p: PostDto) => {
-                        if (p.id !== postDto.id) return p;
-                        return { ...p, upVotes: vote.upVotes, downVotes: vote.downVotes } as PostDto;
-                    }),
-                }));
-                return { ...oldData, pages };
-            });
+            const updatedPost = {
+                ...localPost,
+                upChips: vote.upVotes,
+                downChips: vote.downVotes,
+            };
+            setLocalPost(updatedPost);
+            queryClient.setQueryData(queryKey, updatedPost);
         },
         onSettled: () => {
+            // Always refetch after error or success to ensure consistency
             queryClient.invalidateQueries({ queryKey: queryKey });
         },
     });
 
     const handleVote = (isUpvote: boolean) => {
         if (mutation.isPending) return;
-        mutation.mutate({ postId: postDto.id, isUpvote });
+        mutation.mutate({ postId: localPost.id, isUpvote });
     };
 
     // Comments may be embedded in the post DTO (server returns them with the post).
@@ -126,7 +176,7 @@ export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
     });
 
 
-    const relativeDate = formatDistanceToNow(postDto.createdAt, { addSuffix: true, locale: tr }).replace("yaklaşık", "")
+    const relativeDate = formatDistanceToNow(localPost.createdAt, { addSuffix: true, locale: tr }).replace("yaklaşık", "")
     return (
         <Card
             className="group cursor-pointer overflow-hidden transition-all hover:border-primary/60 hover:shadow-md"
@@ -137,12 +187,12 @@ export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
                         <div className="h-9 w-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-cyan-400 shadow-inner" />
                         <div>
                             <div className="flex flex-wrap items-center gap-1 text-sm text-text-500">
-                                <span className="font-medium">{postDto.createdByUsername}</span>
+                                <span className="font-medium">{localPost.createdByUsername}</span>
                                 <BadgeCheck className="h-4 w-4 text-primary-500" />
                                 <span>•</span>
-                                {postDto.discuit.name &&
-                                    <Link href={`/d/${postDto.discuit.name}`} className="hover:underline">
-                                        <span>{postDto.discuit.name}</span>
+                                {localPost.discuit.name &&
+                                    <Link href={`/d/${localPost.discuit.name}`} className="hover:underline">
+                                        <span>{localPost.discuit.name}</span>
                                     </Link>
                                 }
 
@@ -152,8 +202,8 @@ export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
                         </div>
                     </header>
 
-                    <h2 className="mt-3 font-semibold leading-tight">{postDto.title}</h2>
-                    <p className="line-clamp-3 mt-2 flex-grow">{postDto.content}</p>
+                    <h2 className="mt-3 font-semibold leading-tight">{localPost.title}</h2>
+                    <p className="line-clamp-3 mt-2 flex-grow">{localPost.content}</p>
 
                     <footer className="mt-4 flex">
                         {/* Tasarım İyileştirmesi: Oylama butonları daha modern bir "pill" görünümüne kavuşturuldu. */}
@@ -173,12 +223,12 @@ export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
                                         absolute -top-1 -right-1 w-4 h-4 text-primary-400 transition-all opacity-0 translate-y-5
                                         group-hover/upVote:opacity-100
                                         group-hover/upVote:translate-y-0
-                                        ${postDto.chipByUser === 1 ? "opacity-100 translate-y-0" : ""}
+                                        ${localPost.chipByUser === 1 ? "opacity-100 translate-y-0" : ""}
                                         `}
                                 />
                             </Button>
 
-                            <span className="text-sm flex">{postDto.upChips - postDto.downChips}</span>
+                            <span className="text-sm flex">{(localPost.upChips ?? 0) - (localPost.downChips ?? 0)}</span>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -194,7 +244,7 @@ export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
                                         absolute -top-1 -right-1 w-4 h-4 text-accent-400 transition-all opacity-0 translate-y-0
                                     group-hover/downVote:opacity-100
                                     group-hover/downVote:translate-y-5
-                                    ${postDto.chipByUser === -1 ? "opacity-100 translate-y-5" : ""}
+                                    ${localPost.chipByUser === -1 ? "opacity-100 translate-y-5" : ""}
                                     `}
                                 />
                             </Button>
@@ -214,7 +264,7 @@ export default function PagePost({ postDto, discuitId, queryKey }: PostProps) {
                                 <div className="flex items-start gap-3">
                                     {/* User Avatar */}
                                     <div className="h-9 w-9 flex-shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 shadow-sm" />
-                                    
+
                                     <div className="flex-1 space-y-3">
                                         <textarea
                                             value={commentText}

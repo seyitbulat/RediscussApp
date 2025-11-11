@@ -38,10 +38,51 @@ export default function Post({ postDto, discuitId, queryKey }: PostProps) {
                     ...page,
                     posts: (page.posts || []).map((p: PostDto) => {
                         if (p.id !== postId) return p;
+                        
+                        let upChips = p.upChips;
+                        let downChips = p.downChips;
+                        let newChipByUser = p.chipByUser;
+
+                        if(p.chipByUser === 1){
+                            // Kullanıcı daha önce upvote vermiş
+                            if(isUpvote){
+                                // Tekrar upvote'a basıyor -> geri al
+                                upChips -= 1;
+                                newChipByUser = 0;
+                            }else{
+                                // Downvote'a basıyor -> upvote'u kaldır, downvote ekle
+                                upChips -= 1;
+                                downChips += 1;
+                                newChipByUser = -1;
+                            }
+                        }else if(p.chipByUser === -1){
+                            // Kullanıcı daha önce downvote vermiş
+                            if(isUpvote){
+                                // Upvote'a basıyor -> downvote'u kaldır, upvote ekle
+                                downChips -= 1;
+                                upChips += 1;
+                                newChipByUser = 1;
+                            }else{
+                                // Tekrar downvote'a basıyor -> geri al
+                                downChips -= 1;
+                                newChipByUser = 0;
+                            }
+                        }else{
+                            // Kullanıcı daha önce oy vermemiş
+                            if(isUpvote){
+                                upChips += 1;
+                                newChipByUser = 1;
+                            }else{
+                                downChips += 1;
+                                newChipByUser = -1;
+                            }
+                        }
+                        
                         return {
                             ...p,
-                            upChips: isUpvote ? p.upChips + 1 : p.upChips,
-                            downChips: !isUpvote ? p.downChips + 1 : p.downChips,
+                            upChips: upChips,
+                            downChips: downChips,
+                            chipByUser: newChipByUser,
                         } as PostDto;
                     }),
                 }));

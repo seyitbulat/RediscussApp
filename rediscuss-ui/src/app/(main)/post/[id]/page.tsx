@@ -1,5 +1,6 @@
 import PagePost from "@/components/PagePost";
 import Post from "@/components/Post";
+import SinglePostFeed from "@/components/SinglePostFeed";
 import { getPostById } from "@/lib/post";
 
 
@@ -21,11 +22,7 @@ export default async function PostPage({ params }: PostPageProps) {
     }
     return (
         (post &&
-            <div className="m-12 p-2">
-
-                <PagePost postDto={post} discuitId={post.discuit.id} queryKey={["Page Post"]} />
-
-            </div>
+           <SinglePostFeed initialPost={post}/>
         )
     );
 }
