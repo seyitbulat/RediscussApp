@@ -66,7 +66,7 @@ export interface CommentDto {
     postId: string;
     content: string;
     createdBy: string;
-    createdByUsername: string;
+    CreatedByUsername: string;
     createdAt: Date;
     parentCommentId?: string | null;
 }

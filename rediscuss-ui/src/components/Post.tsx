@@ -156,6 +156,19 @@ export default function Post({ postDto, discuitId, queryKey }: PostProps) {
                                 />
                             </Button>
                         </div>
+
+                        <div className="ml-3 flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowComments(s => !s)}
+                            >
+                                <Link href={`/post/${postDto.id}`} className="hover:">
+                                    Yorumlar ({postDto.commentCount})
+                                </Link>
+                            </Button>
+                        </div>
                     </footer>
                 </div>
             </article>
